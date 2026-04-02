@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentos - Login</title>
+    <title>Meus Documentos - Login</title>
     <style>
         * {
             margin: 0;
@@ -19,34 +19,57 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.05"><path fill="white" d="M20,20 L80,20 L80,80 L20,80 Z M25,25 L75,25 L75,75 L25,75 Z"/><circle cx="50" cy="50" r="5" fill="white"/></svg>');
+            background-repeat: repeat;
+            pointer-events: none;
         }
 
         .container {
             max-width: 450px;
             width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         .card {
-            background: white;
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.98);
+            border-radius: 32px;
+            padding: 40px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            backdrop-filter: blur(10px);
         }
 
-        h1 {
-            color: #1e3c72;
-            margin-bottom: 8px;
-            font-size: 28px;
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
         }
 
-        .subtitle {
+        .logo h1 {
+            font-size: 32px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
             color: #666;
-            margin-bottom: 24px;
             font-size: 14px;
+            margin-top: 8px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         label {
@@ -54,14 +77,14 @@
             font-size: 13px;
             font-weight: 600;
             color: #555;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            border-radius: 16px;
             font-size: 14px;
             transition: all 0.3s;
         }
@@ -69,14 +92,15 @@
         input:focus {
             outline: none;
             border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42,82,152,0.1);
         }
 
         button {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 14px 24px;
+            border-radius: 50px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -89,20 +113,10 @@
             transform: translateY(-2px);
         }
 
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-            margin-top: 10px;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
         .message {
-            margin-top: 15px;
+            margin-top: 20px;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
             font-size: 13px;
             display: none;
@@ -120,42 +134,9 @@
             display: block;
         }
 
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            color: #999;
-            font-size: 12px;
-            position: relative;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #e0e0e0;
-        }
-
-        .divider::before {
-            left: 0;
-        }
-
-        .divider::after {
-            right: 0;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #999;
-        }
-
         .toggle-mode {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
             font-size: 13px;
         }
 
@@ -163,18 +144,44 @@
             color: #2a5298;
             text-decoration: none;
             cursor: pointer;
+            font-weight: 600;
         }
 
         .toggle-mode a:hover {
             text-decoration: underline;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .footer .credit {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .footer .credit span {
+            color: #ffc107;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>📁 Meus Documentos</h1>
-            <p class="subtitle">Guarde e organize os seus trabalhos</p>
+            <div class="logo">
+                <h1>📁 Meus Documentos</h1>
+                <p>Guarde e organize os seus trabalhos</p>
+            </div>
 
             <div id="formContainer">
                 <!-- Formulário de Login -->
@@ -189,11 +196,11 @@
                     </div>
                     <button id="loginBtn">Entrar</button>
                     <div class="toggle-mode">
-                        Não tem conta? <a id="showRegister">Criar conta</a>
+                        Não tem conta? <a id="showRegister">Criar conta gratuita</a>
                     </div>
                 </div>
 
-                <!-- Formulário de Registo (escondido inicialmente) -->
+                <!-- Formulário de Registo -->
                 <div id="registerForm" style="display: none;">
                     <div class="form-group">
                         <label>Email</label>
@@ -218,6 +225,9 @@
 
             <div class="footer">
                 <p>Seus documentos ficam seguros e privados</p>
+                <div class="credit">
+                    Desenvolvido por <span>⚡ Kent Fernandes</span>
+                </div>
             </div>
         </div>
     </div>
@@ -225,7 +235,6 @@
     <script>
         const API_URL = '/api';
 
-        // Elementos
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         const showRegisterBtn = document.getElementById('showRegister');
@@ -235,12 +244,9 @@
         const messageDiv = document.getElementById('message');
 
         function showMessage(texto, tipo) {
-            // Limpar e mostrar a mensagem
             messageDiv.textContent = texto;
             messageDiv.className = `message ${tipo}`;
             messageDiv.style.display = 'block';
-            
-            // Esconder após 4 segundos
             setTimeout(() => {
                 messageDiv.style.display = 'none';
                 messageDiv.textContent = '';
@@ -262,16 +268,13 @@
             messageDiv.textContent = '';
         }
 
-        // Eventos de toggle
         showRegisterBtn.addEventListener('click', showRegister);
         showLoginBtn.addEventListener('click', showLogin);
 
-        // Login
         loginBtn.addEventListener('click', async () => {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
-            // Limpar mensagem anterior
             messageDiv.style.display = 'none';
             messageDiv.textContent = '';
 
@@ -303,13 +306,11 @@
             }
         });
 
-        // Registo
         registerBtn.addEventListener('click', async () => {
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
             const confirm = document.getElementById('confirmPassword').value;
 
-            // Limpar mensagem anterior
             messageDiv.style.display = 'none';
             messageDiv.textContent = '';
 
@@ -351,7 +352,6 @@
             }
         });
 
-        // Se já estiver logado, redirecionar para dashboard
         if (localStorage.getItem('token')) {
             window.location.href = '/dashboard.html';
         }
