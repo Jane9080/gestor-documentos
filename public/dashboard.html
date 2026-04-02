@@ -1190,7 +1190,7 @@
         uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('drag-over'); const files = Array.from(e.dataTransfer.files); if (files.length > 0) uploadFiles(files); });
         fileInput.addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length > 0) uploadFiles(files); });
 
-     async function uploadFiles(files) {
+   async function uploadFiles(files) {
     const tagsInput = document.getElementById('uploadTags').value;
     const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
     
@@ -1238,6 +1238,8 @@
             if (data.sucesso) {
                 successCount++;
                 showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
+                // ATUALIZAR LISTA IMEDIATAMENTE
+                loadDocuments();
             } else {
                 errorCount++;
                 showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
@@ -1251,6 +1253,7 @@
         await new Promise(r => setTimeout(r, 500));
     }
     
+    // Mensagem final
     if (successCount > 0) {
         showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success', true);
         if (tags.length > 0) {
@@ -1261,7 +1264,6 @@
             }, 3000);
         }
         document.getElementById('uploadTags').value = '';
-        loadDocuments();
     } else {
         showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error', true);
         if (tags.length > 0) {
