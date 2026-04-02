@@ -1190,49 +1190,91 @@
         uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('drag-over'); const files = Array.from(e.dataTransfer.files); if (files.length > 0) uploadFiles(files); });
         fileInput.addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length > 0) uploadFiles(files); });
 
-        async function uploadFiles(files) {
-            const tagsInput = document.getElementById('uploadTags').value;
-            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
-            if (tags.length > 0) { tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`; tagsHint.className = 'tags-hint'; }
-            else { tagsHint.innerHTML = ''; }
-            let successCount = 0, errorCount = 0, total = files.length;
-            showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-                const ext = '.' + file.name.split('.').pop().toLowerCase();
-                if (!allowed.includes(ext)) { errorCount++; continue; }
-                if (file.size > 50 * 1024 * 1024) { errorCount++; continue; }
-                const formData = new FormData();
-                formData.append('documento', file);
-                formData.append('tags', JSON.stringify(tags));
-                try {
-                    const response = await fetch(`${API_URL}/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${currentToken}` }, body: formData });
-                    const data = await response.json();
-                    if (data.sucesso) successCount++;
-                    else errorCount++;
-                } catch (error) { errorCount++; }
-                showUploadStatus(`⏳ Enviando... ${i + 1}/${total} (${successCount} ok, ${errorCount} falhou)`, 'loading');
-            }
-            if (successCount > 0) {
-                showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success');
-                if (tags.length > 0) {
-                    tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
-                    tagsHint.className = 'tags-hint success';
-                    setTimeout(() => { tagsHint.innerHTML = ''; }, 3000);
-                }
-                document.getElementById('uploadTags').value = '';
-                loadDocuments();
-            } else {
-                showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error');
-                if (tags.length > 0) {
-                    tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
-                    tagsHint.className = 'tags-hint error';
-                    setTimeout(() => { tagsHint.innerHTML = ''; }, 3000);
-                }
-            }
-            fileInput.value = '';
+     async function uploadFiles(files) {
+    const tagsInput = document.getElementById('uploadTags').value;
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+    
+    if (tags.length > 0) {
+        tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
+        tagsHint.className = 'tags-hint';
+    } else {
+        tagsHint.innerHTML = '';
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    let total = files.length;
+    
+    showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!allowed.includes(ext)) {
+            errorCount++;
+            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
+            continue;
         }
+
+        if (file.size > 50 * 1024 * 1024) {
+            errorCount++;
+            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 50MB)`, 'loading');
+            continue;
+        }
+
+        const formData = new FormData();
+        formData.append('documento', file);
+        formData.append('tags', JSON.stringify(tags));
+
+        try {
+            const response = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentToken}` },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.sucesso) {
+                successCount++;
+                showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
+            } else {
+                errorCount++;
+                showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
+            }
+        } catch (error) {
+            errorCount++;
+            showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
+        }
+        
+        // Pequena pausa para o utilizador ver o progresso
+        await new Promise(r => setTimeout(r, 500));
+    }
+    
+    if (successCount > 0) {
+        showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success', true);
+        if (tags.length > 0) {
+            tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
+            tagsHint.className = 'tags-hint success';
+            setTimeout(() => {
+                tagsHint.innerHTML = '';
+            }, 3000);
+        }
+        document.getElementById('uploadTags').value = '';
+        loadDocuments();
+    } else {
+        showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error', true);
+        if (tags.length > 0) {
+            tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
+            tagsHint.className = 'tags-hint error';
+            setTimeout(() => {
+                tagsHint.innerHTML = '';
+            }, 3000);
+        }
+    }
+    
+    fileInput.value = '';
+}
 
         function showUploadStatus(msg, tipo) {
             uploadStatus.textContent = msg;
@@ -1437,5 +1479,10 @@
 
         loadDocuments();
     </script>
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 20px; background: #f8f9fa; border-top: 1px solid #e0e0e0; margin-top: 30px;">
+        <p style="font-size: 12px; color: #999;">📁 Meus Documentos • Guarde e organize os seus trabalhos</p>
+        <p style="font-size: 11px; color: #aaa; margin-top: 5px;">Desenvolvido por <span style="color: #ffc107; font-weight: 600;">⚡ Kent Fernandes</span></p>
+    </footer>
 </body>
 </html>
