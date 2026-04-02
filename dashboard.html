@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentos - Meus Arquivos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-email {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .upload-card, .documents-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .upload-card h2, .documents-card h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #2a5298;
+            background: #f8f9ff;
+        }
+
+        .upload-area.drag-over {
+            border-color: #2a5298;
+            background: #e8edff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-area small {
+            color: #999;
+            font-size: 12px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-tags {
+            margin-top: 15px;
+        }
+
+        .upload-tags input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .tags-hint {
+            font-size: 11px;
+            margin-top: 5px;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tags-hint.success {
+            color: #2e7d32;
+        }
+
+        .tags-hint.error {
+            color: #991b1b;
+        }
+
+        .tags-info {
+            display: block;
+            font-size: 11px;
+            color: #2a5298;
+            margin-top: 5px;
+        }
+
+        .upload-status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .upload-status.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .upload-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .upload-status.loading {
+            background: #e6f7ff;
+            color: #0050b3;
+            display: block;
+        }
+
+        .filters-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 2;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .filter-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+
+        .filter-fav-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .filter-fav-btn.active {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .tag-filter select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .sort-options select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        .filter-hint {
+            display: block;
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #2a5298;
+            color: white;
+            border-color: #2a5298;
+        }
+
+        .select-all {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .select-all input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .bulk-actions {
+            background: #e8f0fe;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .bulk-actions.show {
+            display: flex;
+        }
+
+        .bulk-info {
+            font-size: 13px;
+            color: #1e3c72;
+            font-weight: 500;
+        }
+
+        .bulk-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .bulk-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .bulk-tag {
+            background: #e8f0fe;
+            color: #1e3c72;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .bulk-clear {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-icon {
+            font-size: 18px;
+        }
+
+        .stat-fav {
+            color: #ffc107;
+        }
+
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .document-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s;
+            border: 1px solid #e0e0e0;
+        }
+
+        .document-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .document-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .document-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .document-content {
+            flex: 1;
+        }
+
+        .document-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .document-icon {
+            font-size: 28px;
+        }
+
+        .favorite-star {
+            font-size: 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #ccc;
+            transition: color 0.2s;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .favorite-star.active {
+            color: #ffc107;
+        }
+
+        .favorite-star:hover {
+            color: #ffc107;
+        }
+
+        .document-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .document-meta {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .document-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 8px 0;
+        }
+
+        .tag {
+            background: #e8f0fe;
+            color: #1e3c72;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag:hover {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .no-tags {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-rename, .btn-view, .btn-download, .btn-delete, .btn-tag, .btn-share {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .btn-rename {
+            background: #fff3e0;
+            color: #e67e22;
+        }
+
+        .btn-tag {
+            background: #e8f0fe;
+            color: #1e3c72;
+        }
+
+        .btn-share {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .btn-view {
+            background: #e6f7ff;
+            color: #0050b3;
+        }
+
+        .btn-download {
+            background: #e6f7e6;
+            color: #2e7d32;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .documents-list {
+            width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 0.4fr 0.5fr 2.5fr 0.6fr 1fr 0.6fr 1fr 0.8fr;
+            background: #f0f2f5;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 12px;
+            color: #555;
+            border-bottom: 1px solid #e0e0e0;
+            min-width: 850px;
+        }
+
+        .list-item {
+            display: grid;
+            grid-template-columns: 0.4fr 0.5fr 2.5fr 0.6fr 1fr 0.6fr 1fr 0.8fr;
+            padding: 10px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            transition: background 0.2s;
+            min-width: 850px;
+            font-size: 13px;
+        }
+
+        .list-item:hover {
+            background: #f8f9fa;
+        }
+
+        .list-col {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .list-icon {
+            font-size: 18px;
+        }
+
+        .list-name {
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-col-tags {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tag-small {
+            background: #e8f0fe;
+            color: #1e3c72;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .tag-small:hover {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .list-fav-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #ccc;
+            padding: 0;
+        }
+
+        .list-fav-btn.active {
+            color: #ffc107;
+        }
+
+        .btn-rename-small, .btn-view-small, .btn-download-small, .btn-delete-small, .btn-tag-small, .btn-share-small {
+            padding: 4px 6px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            margin: 0 1px;
+        }
+
+        .btn-tag-small {
+            background: #e8f0fe;
+            color: #1e3c72;
+        }
+
+        .btn-share-small {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .list-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .empty-state, .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Modal principal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
+        }
+
+        .modal-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f5f5f5;
+        }
+
+        .modal-header h3 {
+            color: #1e3c72;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 80%;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            padding: 0 10px;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+            background: #f0f0f0;
+        }
+
+        .modal-body embed, .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Modal de password */
+        #passwordModal .modal-content {
+            max-width: 400px;
+            height: auto;
+            border-radius: 16px;
+        }
+
+        #passwordModal .modal-body {
+            padding: 20px;
+        }
+
+        @media (max-width: 800px) {
+            .header .container {
+                flex-direction: column;
+                text-align: center;
+            }
+            .filters-bar {
+                flex-direction: column;
+            }
+            .view-toggle {
+                margin-left: 0;
+                justify-content: center;
+            }
+            .stats {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>📁 Meus Documentos</h1>
+                <p>Guarde e organize os seus trabalhos</p>
+            </div>
+            <div class="user-info">
+                <span class="user-email" id="userEmail"></span>
+                <button class="logout-btn" id="changePasswordBtn" style="background: #ffc107; color: #333;">🔒 Alterar Password</button>
+                <button class="logout-btn" id="deleteAllBtn" style="background: #dc3545;">🗑️ Apagar Todos</button>
+                <button class="logout-btn" id="deleteAccountBtn" style="background: #721c24;">⚠️ Apagar Conta</button>
+                <button class="logout-btn" id="logoutBtn">Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="upload-card">
+            <h2>📤 Adicionar documento(s)</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p>Arraste e solte um ou mais ficheiros aqui</p>
+                <p>ou</p>
+                <button id="selectFileBtn" style="background: #2a5298; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Selecionar ficheiros</button>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple>
+                <p><small>Formatos suportados: PDF, Word, PowerPoint (até 50MB por ficheiro)</small></p>
+            </div>
+            <div class="upload-tags">
+                <input type="text" id="uploadTags" placeholder="🏷️ Tags (separadas por vírgula) ex: trabalho, importante, urgente">
+                <div class="tags-hint" id="tagsHint"></div>
+                <small class="tags-info">💡 As tags são guardadas automaticamente com os ficheiros. Depois pode filtrar por tags.</small>
+            </div>
+            <div id="uploadStatus" class="upload-status"></div>
+        </div>
+
+        <div class="documents-card">
+            <h2>📋 Meus documentos</h2>
+            
+            <div class="filters-bar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Pesquisar por nome...">
+                </div>
+                <div class="filter-buttons" id="filterButtons">
+                    <button class="filter-btn active" data-filter="todos">📁 Todos</button>
+                    <button class="filter-btn" data-filter="pdf">📄 PDF</button>
+                    <button class="filter-btn" data-filter="word">📝 Word</button>
+                    <button class="filter-btn" data-filter="powerpoint">📊 PowerPoint</button>
+                </div>
+                <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
+                <div class="tag-filter">
+                    <select id="tagFilterSelect">
+                        <option value="">🏷️ Todas as tags</option>
+                    </select>
+                    <small class="filter-hint">Clique numa tag para filtrar</small>
+                </div>
+                <div class="sort-options">
+                    <select id="sortSelect">
+                        <option value="date_desc">📅 Mais recente primeiro</option>
+                        <option value="date_asc">📅 Mais antigo primeiro</option>
+                        <option value="name_asc">🔤 Nome (A-Z)</option>
+                        <option value="name_desc">🔤 Nome (Z-A)</option>
+                        <option value="size_desc">📦 Maior tamanho primeiro</option>
+                        <option value="size_asc">📦 Menor tamanho primeiro</option>
+                        <option value="type_asc">📁 Tipo (A-Z)</option>
+                    </select>
+                </div>
+                <div class="view-toggle">
+                    <button id="gridViewBtn" class="view-btn active" title="Visualização em grelha">📱 Grelha</button>
+                    <button id="listViewBtn" class="view-btn" title="Visualização em lista">📋 Lista</button>
+                </div>
+                <div class="select-all">
+                    <input type="checkbox" id="selectAllCheckbox">
+                    <label for="selectAllCheckbox">Selecionar todos</label>
+                </div>
+            </div>
+            
+            <div id="bulkActions" class="bulk-actions">
+                <div class="bulk-info" id="bulkInfo">0 documentos selecionados</div>
+                <div class="bulk-buttons">
+                    <button id="bulkTagBtn" class="bulk-tag">🏷️ Adicionar tags</button>
+                    <button id="bulkDeleteBtn" class="bulk-delete">🗑️ Apagar selecionados</button>
+                    <button id="bulkClearBtn" class="bulk-clear">Cancelar</button>
+                </div>
+            </div>
+            
+            <div class="stats" id="stats"></div>
+            
+            <div id="documentsList">
+                <div class="loading-state">⏳ Carregando documentos...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para visualizar documentos -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Visualizar documento</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="viewerFrame"></div>
+        </div>
+    </div>
+
+    <!-- Modal para alterar password -->
+    <div id="passwordModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; height: auto; border-radius: 16px;">
+            <div class="modal-header">
+                <h3>🔒 Alterar Password</h3>
+                <button class="modal-close" id="closePasswordModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group">
+                    <label>Password atual</label>
+                    <input type="password" id="currentPassword" placeholder="********" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+                <div class="form-group">
+                    <label>Nova password</label>
+                    <input type="password" id="newPassword" placeholder="********" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar nova password</label>
+                    <input type="password" id="confirmNewPassword" placeholder="********" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+                <div id="passwordMessage" class="message" style="display: none;"></div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="savePasswordBtn" style="flex: 1; background: #2a5298;">Salvar</button>
+                    <button id="cancelPasswordBtn" style="flex: 1; background: #6c757d;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let currentToken = localStorage.getItem('token');
+        let currentUserEmail = localStorage.getItem('userEmail');
+        let allDocuments = [];
+        let currentFilter = 'todos';
+        let currentSearch = '';
+        let currentTagFilter = '';
+        let currentView = 'grid';
+        let currentSort = 'date_desc';
+        let showFavoritesOnly = false;
+        let selectedDocuments = new Set();
+
+        if (!currentToken) {
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('userEmail').textContent = currentUserEmail;
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userId');
+            window.location.href = '/login.html';
+        });
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const documentsList = document.getElementById('documentsList');
+        const viewModal = document.getElementById('viewModal');
+        const closeModal = document.getElementById('closeModal');
+        const viewerFrame = document.getElementById('viewerFrame');
+        const modalTitle = document.getElementById('modalTitle');
+        const searchInput = document.getElementById('searchInput');
+        const filterButtons = document.getElementById('filterButtons');
+        const filterFavBtn = document.getElementById('filterFavBtn');
+        const tagFilterSelect = document.getElementById('tagFilterSelect');
+        const sortSelect = document.getElementById('sortSelect');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+        const listViewBtn = document.getElementById('listViewBtn');
+        const tagsHint = document.getElementById('tagsHint');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const bulkActions = document.getElementById('bulkActions');
+        const bulkInfo = document.getElementById('bulkInfo');
+        const bulkTagBtn = document.getElementById('bulkTagBtn');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const bulkClearBtn = document.getElementById('bulkClearBtn');
+
+        // Elementos do modal de password
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const passwordModal = document.getElementById('passwordModal');
+        const closePasswordModal = document.getElementById('closePasswordModal');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+        const savePasswordBtn = document.getElementById('savePasswordBtn');
+        const currentPasswordInput = document.getElementById('currentPassword');
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+        const passwordMessage = document.getElementById('passwordMessage');
+
+        function showPasswordMessage(texto, tipo) {
+            passwordMessage.textContent = texto;
+            passwordMessage.className = `message ${tipo}`;
+            passwordMessage.style.display = 'block';
+            setTimeout(() => {
+                passwordMessage.style.display = 'none';
+            }, 4000);
+        }
+
+        filterFavBtn.addEventListener('click', () => {
+            showFavoritesOnly = !showFavoritesOnly;
+            if (showFavoritesOnly) {
+                filterFavBtn.classList.add('active');
+            } else {
+                filterFavBtn.classList.remove('active');
+            }
+            filterAndRenderDocuments();
+        });
+
+        window.toggleFavorite = async (id, currentState) => {
+            const newState = !currentState;
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}/favorite`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ favorite: newState })
+                });
+                const data = await response.json();
+                if (data.sucesso) {
+                    loadDocuments();
+                } else {
+                    alert(data.erro || 'Erro ao atualizar favorito');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro de conexão');
+            }
+        };
+
+        window.shareDocument = async (id) => {
+            const days = prompt('🔗 Por quantos dias o link deve ser válido? (1-30)', '7');
+            if (!days) return;
+            
+            const expires_days = parseInt(days);
+            if (expires_days < 1 || expires_days > 30) {
+                alert('Por favor, insira um valor entre 1 e 30 dias.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}/share`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ expires_days })
+                });
+                const data = await response.json();
+                if (data.sucesso) {
+                    const expiresDate = new Date(data.expires_at).toLocaleDateString('pt-PT');
+                    try {
+                        await navigator.clipboard.writeText(data.url);
+                        alert(`✅ Link copiado!\n\n🔗 ${data.url}\n\nExpira em: ${expiresDate}`);
+                    } catch (err) {
+                        alert(`✅ Link gerado!\n\n🔗 ${data.url}\n\nExpira em: ${expiresDate}\n\nCopie manualmente (Ctrl+C).`);
+                    }
+                } else {
+                    alert(data.erro || 'Erro ao gerar link');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro de conexão');
+            }
+        };
+
+        function sortDocuments(docs) {
+            const sorted = [...docs];
+            switch(currentSort) {
+                case 'name_asc': return sorted.sort((a, b) => a.original_name.localeCompare(b.original_name));
+                case 'name_desc': return sorted.sort((a, b) => b.original_name.localeCompare(a.original_name));
+                case 'date_asc': return sorted.sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at));
+                case 'date_desc': return sorted.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+                case 'size_asc': return sorted.sort((a, b) => a.file_size - b.file_size);
+                case 'size_desc': return sorted.sort((a, b) => b.file_size - a.file_size);
+                case 'type_asc': return sorted.sort((a, b) => a.file_type.localeCompare(b.file_type));
+                default: return sorted;
+            }
+        }
+
+        function updateBulkActions() {
+            const count = selectedDocuments.size;
+            if (count > 0) {
+                bulkInfo.textContent = `${count} documento(s) selecionado(s)`;
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+                selectAllCheckbox.checked = false;
+            }
+        }
+
+        function selectAll(select) {
+            const currentDocs = getCurrentDisplayedDocuments();
+            if (select) {
+                currentDocs.forEach(doc => selectedDocuments.add(doc.id));
+            } else {
+                currentDocs.forEach(doc => selectedDocuments.delete(doc.id));
+            }
+            updateBulkActions();
+            filterAndRenderDocuments();
+        }
+
+        function getCurrentDisplayedDocuments() {
+            let filtered = [...allDocuments];
+            if (currentFilter !== 'todos') filtered = filtered.filter(doc => doc.file_type === currentFilter);
+            if (showFavoritesOnly) filtered = filtered.filter(doc => doc.favorite === 1);
+            if (currentTagFilter) filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
+            if (currentSearch) filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
+            return filtered;
+        }
+
+        selectAllCheckbox.addEventListener('change', (e) => selectAll(e.target.checked));
+        bulkClearBtn.addEventListener('click', () => { selectedDocuments.clear(); updateBulkActions(); filterAndRenderDocuments(); });
+        
+        bulkDeleteBtn.addEventListener('click', async () => {
+            if (selectedDocuments.size === 0) return;
+            if (!confirm(`⚠️ Tem certeza que deseja apagar ${selectedDocuments.size} documento(s)?`)) return;
+            let successCount = 0;
+            for (const id of selectedDocuments) {
+                try {
+                    const response = await fetch(`${API_URL}/documents/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
+                    const data = await response.json();
+                    if (data.sucesso) successCount++;
+                } catch (error) { console.error(error); }
+            }
+            alert(`✅ ${successCount} documento(s) apagado(s) com sucesso!`);
+            selectedDocuments.clear();
+            updateBulkActions();
+            loadDocuments();
+        });
+
+        bulkTagBtn.addEventListener('click', async () => {
+            if (selectedDocuments.size === 0) return;
+            const newTagsStr = prompt('✏️ Adicionar tags (separadas por vírgula):', '');
+            if (!newTagsStr) return;
+            const newTags = newTagsStr.split(',').map(t => t.trim()).filter(t => t);
+            let successCount = 0;
+            for (const id of selectedDocuments) {
+                const doc = allDocuments.find(d => d.id === id);
+                const currentTags = doc.tags || [];
+                const mergedTags = [...new Set([...currentTags, ...newTags])];
+                try {
+                    const response = await fetch(`${API_URL}/documents/${id}/tags`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tags: mergedTags })
+                    });
+                    const data = await response.json();
+                    if (data.sucesso) successCount++;
+                } catch (error) { console.error(error); }
+            }
+            alert(`✅ Tags adicionadas a ${successCount} documento(s)!`);
+            selectedDocuments.clear();
+            updateBulkActions();
+            loadDocuments();
+        });
+
+        gridViewBtn.addEventListener('click', () => { currentView = 'grid'; gridViewBtn.classList.add('active'); listViewBtn.classList.remove('active'); filterAndRenderDocuments(); });
+        listViewBtn.addEventListener('click', () => { currentView = 'list'; listViewBtn.classList.add('active'); gridViewBtn.classList.remove('active'); filterAndRenderDocuments(); });
+
+        filterButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.filter-btn');
+            if (!btn || btn.id === 'filterFavBtn') return;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            filterAndRenderDocuments();
+        });
+
+        tagFilterSelect.addEventListener('change', (e) => { currentTagFilter = e.target.value; filterAndRenderDocuments(); });
+        sortSelect.addEventListener('change', (e) => { currentSort = e.target.value; filterAndRenderDocuments(); });
+        searchInput.addEventListener('input', (e) => { currentSearch = e.target.value.toLowerCase(); filterAndRenderDocuments(); });
+
+        function filterAndRenderDocuments() {
+            let filtered = [...allDocuments];
+            if (currentFilter !== 'todos') filtered = filtered.filter(doc => doc.file_type === currentFilter);
+            if (showFavoritesOnly) filtered = filtered.filter(doc => doc.favorite === 1);
+            if (currentTagFilter) filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
+            if (currentSearch) filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
+            filtered = sortDocuments(filtered);
+            renderDocuments(filtered);
+            updateStats(allDocuments);
+            updateTagFilter(allDocuments);
+        }
+
+        function updateStats(docs) {
+            const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
+            const wordCount = docs.filter(d => d.file_type === 'word').length;
+            const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
+            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint'].includes(d.file_type)).length;
+            const favCount = docs.filter(d => d.favorite === 1).length;
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
+                <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
+                <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
+                <div class="stat-item"><span class="stat-icon">📎</span> Outros: ${outrosCount}</div>
+                <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
+                <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+            `;
+        }
+
+        function updateTagFilter(docs) {
+            const allTags = new Set();
+            docs.forEach(doc => { if (doc.tags && doc.tags.length) doc.tags.forEach(tag => allTags.add(tag)); });
+            tagFilterSelect.innerHTML = '<option value="">🏷️ Todas as tags</option>' + Array.from(allTags).sort().map(tag => `<option value="${escapeHtml(tag)}">#${escapeHtml(tag)}</option>`).join('');
+            if (currentTagFilter && allTags.has(currentTagFilter)) tagFilterSelect.value = currentTagFilter;
+            else if (currentTagFilter) { currentTagFilter = ''; tagFilterSelect.value = ''; }
+        }
+
+        selectFileBtn.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+        uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('drag-over'); });
+        uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('drag-over'); const files = Array.from(e.dataTransfer.files); if (files.length > 0) uploadFiles(files); });
+        fileInput.addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length > 0) uploadFiles(files); });
+
+        async function uploadFiles(files) {
+            const tagsInput = document.getElementById('uploadTags').value;
+            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+            if (tags.length > 0) { tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`; tagsHint.className = 'tags-hint'; }
+            else { tagsHint.innerHTML = ''; }
+            let successCount = 0, errorCount = 0, total = files.length;
+            showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowed.includes(ext)) { errorCount++; continue; }
+                if (file.size > 50 * 1024 * 1024) { errorCount++; continue; }
+                const formData = new FormData();
+                formData.append('documento', file);
+                formData.append('tags', JSON.stringify(tags));
+                try {
+                    const response = await fetch(`${API_URL}/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${currentToken}` }, body: formData });
+                    const data = await response.json();
+                    if (data.sucesso) successCount++;
+                    else errorCount++;
+                } catch (error) { errorCount++; }
+                showUploadStatus(`⏳ Enviando... ${i + 1}/${total} (${successCount} ok, ${errorCount} falhou)`, 'loading');
+            }
+            if (successCount > 0) {
+                showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success');
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
+                    tagsHint.className = 'tags-hint success';
+                    setTimeout(() => { tagsHint.innerHTML = ''; }, 3000);
+                }
+                document.getElementById('uploadTags').value = '';
+                loadDocuments();
+            } else {
+                showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error');
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
+                    tagsHint.className = 'tags-hint error';
+                    setTimeout(() => { tagsHint.innerHTML = ''; }, 3000);
+                }
+            }
+            fileInput.value = '';
+        }
+
+        function showUploadStatus(msg, tipo) {
+            uploadStatus.textContent = msg;
+            uploadStatus.className = `upload-status ${tipo}`;
+            uploadStatus.style.display = 'block';
+            setTimeout(() => { uploadStatus.style.display = 'none'; }, 5000);
+        }
+
+        window.renameDocument = async (id, currentName) => {
+            const newName = prompt('✏️ Novo nome do documento:', currentName);
+            if (!newName || newName === currentName) return;
+            const ext = currentName.split('.').pop();
+            let newNameWithExt = newName;
+            if (!newName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) newNameWithExt = `${newName}.${ext}`;
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}/rename`, { method: 'PUT', headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ newName: newNameWithExt }) });
+                const data = await response.json();
+                if (data.sucesso) loadDocuments();
+                else alert(data.erro || 'Erro ao renomear');
+            } catch (error) { console.error(error); alert('Erro de conexão'); }
+        };
+
+        window.editTags = async (id, currentTags) => {
+            const tagsStr = currentTags && currentTags.length ? currentTags.join(', ') : '';
+            const newTagsStr = prompt('✏️ Editar tags (separadas por vírgula):', tagsStr);
+            if (newTagsStr === null) return;
+            const newTags = newTagsStr.split(',').map(t => t.trim()).filter(t => t);
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}/tags`, { method: 'PUT', headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: newTags }) });
+                const data = await response.json();
+                if (data.sucesso) loadDocuments();
+                else alert(data.erro || 'Erro ao atualizar tags');
+            } catch (error) { console.error(error); alert('Erro de conexão'); }
+        };
+
+        window.filterByTag = (tag) => { currentTagFilter = tag; tagFilterSelect.value = tag; filterAndRenderDocuments(); };
+
+        document.getElementById('deleteAllBtn').addEventListener('click', async () => {
+            if (!confirm('⚠️ Tem certeza que deseja apagar TODOS os seus documentos? Esta ação não pode ser desfeita.')) return;
+            try {
+                const response = await fetch(`${API_URL}/documents/delete-all`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
+                const data = await response.json();
+                if (data.sucesso) { alert(`✅ ${data.mensagem}`); loadDocuments(); }
+                else { alert(data.erro || 'Erro ao apagar documentos'); }
+            } catch (error) { console.error(error); alert('Erro de conexão'); }
+        });
+
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+            const confirmacao = prompt('⚠️ Para apagar a sua conta, digite "APAGAR" no campo abaixo:');
+            if (confirmacao !== 'APAGAR') { alert('Operação cancelada.'); return; }
+            if (!confirm('Tem certeza absoluta? Todos os seus documentos serão apagados permanentemente.')) return;
+            try {
+                const response = await fetch(`${API_URL}/user/delete`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
+                const data = await response.json();
+                if (data.sucesso) {
+                    alert('✅ Conta apagada com sucesso.');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userId');
+                    window.location.href = '/login.html';
+                } else { alert(data.erro || 'Erro ao apagar conta'); }
+            } catch (error) { console.error(error); alert('Erro de conexão'); }
+        });
+
+        async function loadDocuments() {
+            documentsList.innerHTML = '<div class="loading-state">⏳ Carregando documentos...</div>';
+            try {
+                const response = await fetch(`${API_URL}/documents`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+                const data = await response.json();
+                if (data.documentos && data.documentos.length > 0) { allDocuments = data.documentos; filterAndRenderDocuments(); }
+                else { allDocuments = []; documentsList.innerHTML = '<div class="empty-state">📭 Nenhum documento. Faça upload do seu primeiro arquivo.</div>'; updateStats([]); updateTagFilter([]); }
+            } catch (error) { console.error(error); documentsList.innerHTML = '<div class="empty-state">❌ Erro ao carregar documentos</div>'; }
+        }
+
+        function toggleDocumentSelection(id) {
+            if (selectedDocuments.has(id)) selectedDocuments.delete(id);
+            else selectedDocuments.add(id);
+            updateBulkActions();
+            filterAndRenderDocuments();
+        }
+
+        function renderDocuments(docs) {
+            const icons = { pdf: '📄', word: '📝', powerpoint: '📊', outro: '📎' };
+            if (docs.length === 0) { documentsList.innerHTML = '<div class="empty-state">📭 Nenhum documento encontrado.</div>'; return; }
+            if (currentView === 'grid') {
+                documentsList.innerHTML = `<div class="documents-grid">${docs.map(doc => `
+                    <div class="document-item">
+                        <div class="document-header">
+                            <input type="checkbox" class="document-checkbox" data-id="${doc.id}" ${selectedDocuments.has(doc.id) ? 'checked' : ''}>
+                            <div class="document-content">
+                                <div class="document-title-row">
+                                    <div class="document-icon">${icons[doc.file_type] || '📎'}</div>
+                                    <button class="favorite-star ${doc.favorite === 1 ? 'active' : ''}" onclick="toggleFavorite(${doc.id}, ${doc.favorite === 1})">★</button>
+                                </div>
+                                <div class="document-name">${escapeHtml(doc.original_name)}</div>
+                                <div class="document-meta">${formatDate(doc.uploaded_at)} • ${formatSize(doc.file_size)}</div>
+                                <div class="document-tags">${doc.tags && doc.tags.length ? doc.tags.map(tag => `<span class="tag" onclick="filterByTag('${escapeHtml(tag)}')">#${escapeHtml(tag)}</span>`).join('') : '<span class="no-tags">Sem tags</span>'}</div>
+                                <div class="document-actions">
+                                    <button class="btn-rename" onclick="renameDocument(${doc.id}, '${escapeHtml(doc.original_name)}')">✏️ Renomear</button>
+                                    <button class="btn-tag" onclick="editTags(${doc.id}, ${JSON.stringify(doc.tags || [])})">🏷️ Tags</button>
+                                    <button class="btn-share" onclick="shareDocument(${doc.id})">🔗 Partilhar</button>
+                                    <button class="btn-view" onclick="viewDocument(${doc.id}, '${escapeHtml(doc.original_name)}')">👁️ Ver</button>
+                                    <button class="btn-download" onclick="downloadDocument(${doc.id})">⬇️ Baixar</button>
+                                    <button class="btn-delete" onclick="deleteDocument(${doc.id})">🗑️ Apagar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`).join('')}</div>`;
+            } else {
+                documentsList.innerHTML = `<div class="documents-list">
+                    <div class="list-header">
+                        <div class="list-col"><input type="checkbox" id="listSelectAll" class="list-checkbox"></div>
+                        <div class="list-col">⭐</div><div class="list-col">Nome</div><div class="list-col">Tipo</div><div class="list-col">Data</div><div class="list-col">Tamanho</div><div class="list-col">Tags</div><div class="list-col">Ações</div>
+                    </div>
+                    ${docs.map(doc => `
+                        <div class="list-item">
+                            <div class="list-col"><input type="checkbox" class="list-checkbox doc-checkbox" data-id="${doc.id}" ${selectedDocuments.has(doc.id) ? 'checked' : ''}></div>
+                            <div class="list-col"><button class="list-fav-btn ${doc.favorite === 1 ? 'active' : ''}" onclick="toggleFavorite(${doc.id}, ${doc.favorite === 1})">★</button></div>
+                            <div class="list-col"><span class="list-icon">${icons[doc.file_type] || '📎'}</span><span class="list-name" title="${escapeHtml(doc.original_name)}">${escapeHtml(doc.original_name)}</span></div>
+                            <div class="list-col">${doc.file_type.toUpperCase()}</div>
+                            <div class="list-col">${formatDate(doc.uploaded_at)}</div>
+                            <div class="list-col">${formatSize(doc.file_size)}</div>
+                            <div class="list-col list-col-tags">${doc.tags && doc.tags.length ? doc.tags.map(tag => `<span class="tag-small" onclick="filterByTag('${escapeHtml(tag)}')">#${escapeHtml(tag)}</span>`).join('') : '-'}</div>
+                            <div class="list-col">
+                                <button class="btn-rename-small" onclick="renameDocument(${doc.id}, '${escapeHtml(doc.original_name)}')" title="Renomear">✏️</button>
+                                <button class="btn-tag-small" onclick="editTags(${doc.id}, ${JSON.stringify(doc.tags || [])})" title="Editar tags">🏷️</button>
+                                <button class="btn-share-small" onclick="shareDocument(${doc.id})" title="Partilhar">🔗</button>
+                                <button class="btn-view-small" onclick="viewDocument(${doc.id}, '${escapeHtml(doc.original_name)}')" title="Ver">👁️</button>
+                                <button class="btn-download-small" onclick="downloadDocument(${doc.id})" title="Baixar">⬇️</button>
+                                <button class="btn-delete-small" onclick="deleteDocument(${doc.id})" title="Apagar">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`;
+                const listSelectAll = document.getElementById('listSelectAll');
+                if (listSelectAll) { listSelectAll.checked = selectedDocuments.size === docs.length && docs.length > 0; listSelectAll.onchange = (e) => selectAll(e.target.checked); }
+                document.querySelectorAll('.doc-checkbox').forEach(cb => { cb.onchange = (e) => { const id = parseInt(e.target.dataset.id); toggleDocumentSelection(id); }; });
+            }
+            document.querySelectorAll('.document-checkbox').forEach(cb => { cb.onchange = (e) => { const id = parseInt(e.target.dataset.id); toggleDocumentSelection(id); }; });
+        }
+
+        function formatDate(dateStr) { const date = new Date(dateStr); return date.toLocaleDateString('pt-PT') + ' ' + date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); }
+        function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / (1024 * 1024)).toFixed(1) + ' MB'; }
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+        window.viewDocument = (id, name) => {
+            modalTitle.textContent = name;
+            const fileType = name.split('.').pop().toLowerCase();
+            const url = `${API_URL}/view/${id}?token=${currentToken}`;
+            viewerFrame.innerHTML = '';
+            if (fileType === 'pdf') viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
+            else viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+            viewModal.style.display = 'flex';
+        };
+
+        window.downloadDocument = (id) => { window.open(`${API_URL}/download/${id}?token=${currentToken}`, '_blank'); };
+        window.deleteDocument = async (id) => {
+            if (!confirm('Tem certeza que deseja apagar este documento?')) return;
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
+                const data = await response.json();
+                if (data.sucesso) { if (selectedDocuments.has(id)) selectedDocuments.delete(id); updateBulkActions(); loadDocuments(); }
+                else { alert(data.erro || 'Erro ao apagar'); }
+            } catch (error) { console.error(error); alert('Erro de conexão'); }
+        };
+
+        closeModal.addEventListener('click', () => { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; });
+        window.addEventListener('click', (e) => { if (e.target === viewModal) { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; } });
+
+        // Abrir modal de alterar password
+        changePasswordBtn.addEventListener('click', () => {
+            currentPasswordInput.value = '';
+            newPasswordInput.value = '';
+            confirmNewPasswordInput.value = '';
+            passwordMessage.style.display = 'none';
+            passwordModal.style.display = 'flex';
+        });
+
+        closePasswordModal.addEventListener('click', () => { passwordModal.style.display = 'none'; });
+        cancelPasswordBtn.addEventListener('click', () => { passwordModal.style.display = 'none'; });
+
+        savePasswordBtn.addEventListener('click', async () => {
+            const currentPassword = currentPasswordInput.value;
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmNewPasswordInput.value;
+            if (!currentPassword || !newPassword) { showPasswordMessage('Preencha todos os campos', 'error'); return; }
+            if (newPassword !== confirmPassword) { showPasswordMessage('As novas passwords não coincidem', 'error'); return; }
+            if (newPassword.length < 6) { showPasswordMessage('A nova password deve ter pelo menos 6 caracteres', 'error'); return; }
+            try {
+                const response = await fetch(`${API_URL}/user/change-password`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                const data = await response.json();
+                if (data.sucesso) {
+                    showPasswordMessage('✅ Password alterada com sucesso!', 'success');
+                    setTimeout(() => { passwordModal.style.display = 'none'; }, 2000);
+                } else { showPasswordMessage(data.erro || 'Erro ao alterar password', 'error'); }
+            } catch (error) { console.error(error); showPasswordMessage('Erro de conexão', 'error'); }
+        });
+
+        loadDocuments();
+    </script>
+</body>
+</html>
