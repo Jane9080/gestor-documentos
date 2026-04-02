@@ -902,6 +902,7 @@
     </div>
 
     <script>
+        let uploadsInProgress = false;
         const API_URL = '/api';
         let currentToken = localStorage.getItem('token');
         let currentUserEmail = localStorage.getItem('userEmail');
@@ -1191,6 +1192,7 @@
         fileInput.addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length > 0) uploadFiles(files); });
 
  async function uploadFiles(files) {
+     uploadsInProgress = true;
     const tagsInput = document.getElementById('uploadTags').value;
     const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
     
@@ -1274,7 +1276,7 @@
             }, 3000);
         }
     }
-    
+    uploadsInProgress = false;
     fileInput.value = '';
 }
 
@@ -1484,6 +1486,13 @@
         });
 
         loadDocuments();
+    window.addEventListener('beforeunload', (e) => {
+    if (uploadsInProgress) {
+        e.preventDefault();
+        e.returnValue = '⚠️ Existem uploads em andamento. Se sair agora, os ficheiros não terminados serão perdidos. Tem certeza?';
+        return e.returnValue;
+    }
+});
     </script>
     <!-- Footer -->
     <footer style="text-align: center; padding: 20px; background: #f8f9fa; border-top: 1px solid #e0e0e0; margin-top: 30px;">
