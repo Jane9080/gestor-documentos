@@ -1619,7 +1619,14 @@
                 } else { showPasswordMessage(data.erro || 'Erro ao alterar password', 'error'); }
             } catch (error) { console.error(error); showPasswordMessage('Erro de conexão', 'error'); }
         });
-
+// Aviso ao tentar sair com uploads em andamento
+  window.addEventListener('beforeunload', (e) => {
+    if (uploadsInProgress) {
+        e.preventDefault();
+        e.returnValue = '⚠️ Existem uploads em andamento. Se sair agora, os ficheiros não terminados serão perdidos. Tem certeza?';
+        return e.returnValue;
+    }
+});
         loadDocuments();
     </script>
 </body>
