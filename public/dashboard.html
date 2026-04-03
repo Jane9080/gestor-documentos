@@ -1040,97 +1040,118 @@
             allDocuments.unshift(doc);
             filterAndRenderDocuments();
         }
-
-        async function processQueue() {
-            if (pendingFiles.length === 0) return;
-            
-            const filesToUpload = [...pendingFiles];
-            clearQueue();
-            
-            uploadsInProgress = true;
-            
-            const tagsInput = document.getElementById('uploadTags').value;
-            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
-            
-            if (tags.length > 0) {
-                tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
-                tagsHint.className = 'tags-hint';
-            } else {
-                tagsHint.innerHTML = '';
-            }
-            
-            let successCount = 0;
-            let errorCount = 0;
-            let total = filesToUpload.length;
-            
-            showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
-            
-            for (let i = 0; i < filesToUpload.length; i++) {
-                const file = filesToUpload[i];
-                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-                const ext = '.' + file.name.split('.').pop().toLowerCase();
-                
-                if (!allowed.includes(ext)) {
-                    errorCount++;
-                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
-                    continue;
-                }
-
-                if (file.size > 100 * 1024 * 1024) {
-                    errorCount++;
-                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
-                    continue;
-                }
-
-                const formData = new FormData();
-                formData.append('documento', file);
-                formData.append('tags', JSON.stringify(tags));
-
-                try {
-                    const response = await fetch(`${API_URL}/upload`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${currentToken}` },
-                        body: formData
-                    });
-                    const data = await response.json();
-                    if (data.sucesso) {
-                        successCount++;
-                        showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
-                        addDocumentToLocalList(data.documento);
-                    } else {
-                        errorCount++;
-                        showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
-                    }
-                } catch (error) {
-                    errorCount++;
-                    showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
-                }
-                
-                await new Promise(r => setTimeout(r, 100));
-            }
-            
-            if (successCount > 0) {
-                showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success', true);
-                if (tags.length > 0) {
-                    tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
-                    tagsHint.className = 'tags-hint success';
-                    setTimeout(() => {
-                        tagsHint.innerHTML = '';
-                    }, 3000);
-                }
-                document.getElementById('uploadTags').value = '';
-            } else {
-                showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error', true);
-                if (tags.length > 0) {
-                    tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
-                    tagsHint.className = 'tags-hint error';
-                    setTimeout(() => {
-                        tagsHint.innerHTML = '';
-                    }, 3000);
-                }
-            }
-            uploadsInProgress = false;
+async function processQueue() {
+    if (pendingFiles.length === 0) return;
+    
+    const filesToUpload = [...pendingFiles];
+    clearQueue();
+    
+    uploadsInProgress = true;
+    
+    const tagsInput = document.getElementById('uploadTags').value;
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+    
+    if (tags.length > 0) {
+        tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
+        tagsHint.className = 'tags-hint';
+    } else {
+        tagsHint.innerHTML = '';
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    let errorDetails = [];
+    let total = filesToUpload.length;
+    
+    showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
+    
+    for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!allowed.includes(ext)) {
+            errorCount++;
+            errorDetails.push(`"${file.name}" - formato não suportado (${ext})`);
+            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
+            continue;
         }
+
+        if (file.size > 100 * 1024 * 1024) {
+            errorCount++;
+            errorDetails.push(`"${file.name}" - ficheiro muito grande (${(file.size / (1024*1024)).toFixed(1)}MB > 100MB)`);
+            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
+            continue;
+        }
+
+        const formData = new FormData();
+        formData.append('documento', file);
+        formData.append('tags', JSON.stringify(tags));
+
+        try {
+            const response = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentToken}` },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.sucesso) {
+                successCount++;
+                showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
+                addDocumentToLocalList(data.documento);
+            } else {
+                errorCount++;
+                errorDetails.push(`"${file.name}" - erro do servidor: ${data.erro || 'desconhecido'}`);
+                showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
+            }
+        } catch (error) {
+            errorCount++;
+            errorDetails.push(`"${file.name}" - erro de conexão: ${error.message || 'falha na rede'}`);
+            showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
+        }
+        
+        await new Promise(r => setTimeout(r, 100));
+    }
+    
+    // Mensagem final detalhada
+    if (successCount > 0 && errorCount === 0) {
+        showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!`, 'success', true);
+        if (tags.length > 0) {
+            tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
+            tagsHint.className = 'tags-hint success';
+            setTimeout(() => {
+                tagsHint.innerHTML = '';
+            }, 3000);
+        }
+        document.getElementById('uploadTags').value = '';
+    } else if (successCount > 0 && errorCount > 0) {
+        showUploadStatus(`⚠️ Parcial: ${successCount} ok, ${errorCount} falhou. Ver detalhes abaixo.`, 'loading', true);
+        if (errorDetails.length > 0) {
+            tagsHint.innerHTML = `❌ Falhas: ${errorDetails.slice(0, 3).join(', ')}${errorDetails.length > 3 ? '...' : ''}`;
+            tagsHint.className = 'tags-hint error';
+            setTimeout(() => {
+                tagsHint.innerHTML = '';
+            }, 8000);
+        }
+    } else {
+        let errorMsg = `❌ Nenhum documento enviado. `;
+        if (errorDetails.length > 0) {
+            errorMsg += `Motivos: ${errorDetails.slice(0, 2).join(', ')}`;
+            if (errorDetails.length > 2) errorMsg += ` e mais ${errorDetails.length - 2} erro(s)`;
+        } else {
+            errorMsg += `Verifique a ligação à internet e tente novamente.`;
+        }
+        showUploadStatus(errorMsg, 'error', true);
+        if (tags.length > 0) {
+            tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
+            tagsHint.className = 'tags-hint error';
+            setTimeout(() => {
+                tagsHint.innerHTML = '';
+            }, 5000);
+        }
+    }
+    uploadsInProgress = false;
+}
 
         document.getElementById('processQueueBtn').addEventListener('click', () => {
             processQueue();
