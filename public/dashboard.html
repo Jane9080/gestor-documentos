@@ -190,6 +190,46 @@
             display: block;
         }
 
+        /* Fila de upload */
+        .queue-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .queue-info {
+            background: #e8f0fe;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #1e3c72;
+        }
+
+        .queue-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-process {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
         .filters-bar {
             display: flex;
             gap: 15px;
@@ -669,7 +709,7 @@
             color: #999;
         }
 
-        /* Modal principal */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -749,6 +789,14 @@
             padding: 20px;
         }
 
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 30px;
+        }
+
         @media (max-width: 800px) {
             .header .container {
                 flex-direction: column;
@@ -793,12 +841,19 @@
                 <p>ou</p>
                 <button id="selectFileBtn" style="background: #2a5298; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Selecionar ficheiros</button>
                 <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple>
-                <p><small>Formatos suportados: PDF, Word, PowerPoint (até 50MB por ficheiro)</small></p>
+                <p><small>Formatos suportados: PDF, Word, PowerPoint (até 100MB por ficheiro)</small></p>
             </div>
             <div class="upload-tags">
                 <input type="text" id="uploadTags" placeholder="🏷️ Tags (separadas por vírgula) ex: trabalho, importante, urgente">
                 <div class="tags-hint" id="tagsHint"></div>
                 <small class="tags-info">💡 As tags são guardadas automaticamente com os ficheiros. Depois pode filtrar por tags.</small>
+            </div>
+            <div id="queueContainer" class="queue-container">
+                <div id="queueInfo" class="queue-info">0 ficheiro(s) selecionado(s)</div>
+                <div class="queue-buttons">
+                    <button id="processQueueBtn" class="btn-process">📤 Enviar tudo</button>
+                    <button id="clearQueueBtn" class="btn-clear">🗑️ Limpar</button>
+                </div>
             </div>
             <div id="uploadStatus" class="upload-status"></div>
         </div>
@@ -901,8 +956,12 @@
         </div>
     </div>
 
+    <footer>
+        <p>📁 Meus Documentos • Guarde e organize os seus trabalhos</p>
+        <p style="margin-top: 5px;">Desenvolvido por <span style="background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">⚡ Kent Fernandes</span></p>
+    </footer>
+
     <script>
-        let uploadsInProgress = false;
         const API_URL = '/api';
         let currentToken = localStorage.getItem('token');
         let currentUserEmail = localStorage.getItem('userEmail');
@@ -914,6 +973,9 @@
         let currentSort = 'date_desc';
         let showFavoritesOnly = false;
         let selectedDocuments = new Set();
+        let uploadsInProgress = false;
+        let pendingFiles = [];
+        let uploadStatusTimeout = null;
 
         if (!currentToken) {
             window.location.href = '/login.html';
@@ -928,6 +990,157 @@
             window.location.href = '/login.html';
         });
 
+        // ==================== FILA DE UPLOADS ====================
+        function updateQueueDisplay() {
+            const container = document.getElementById('queueContainer');
+            const queueInfo = document.getElementById('queueInfo');
+            
+            if (pendingFiles.length > 0) {
+                container.style.display = 'block';
+                const totalSize = pendingFiles.reduce((sum, file) => sum + file.size, 0);
+                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(1);
+                queueInfo.innerHTML = `📁 ${pendingFiles.length} ficheiro(s) selecionado(s) (total: ${totalSizeMB} MB)`;
+            } else {
+                container.style.display = 'none';
+                queueInfo.innerHTML = '0 ficheiro(s) selecionado(s)';
+            }
+        }
+
+        function addFilesToQueue(newFiles) {
+            pendingFiles = [...pendingFiles, ...newFiles];
+            updateQueueDisplay();
+        }
+
+        function clearQueue() {
+            pendingFiles = [];
+            updateQueueDisplay();
+            fileInput.value = '';
+        }
+
+        function showUploadStatus(msg, tipo, isFinal = false) {
+            if (uploadStatusTimeout) {
+                clearTimeout(uploadStatusTimeout);
+                uploadStatusTimeout = null;
+            }
+            
+            uploadStatus.textContent = msg;
+            uploadStatus.className = `upload-status ${tipo}`;
+            uploadStatus.style.display = 'block';
+            
+            if (isFinal) {
+                uploadStatusTimeout = setTimeout(() => {
+                    uploadStatus.style.display = 'none';
+                    uploadStatus.textContent = '';
+                    uploadStatusTimeout = null;
+                }, 5000);
+            }
+        }
+
+        function addDocumentToLocalList(doc) {
+            allDocuments.unshift(doc);
+            filterAndRenderDocuments();
+        }
+
+        async function processQueue() {
+            if (pendingFiles.length === 0) return;
+            
+            const filesToUpload = [...pendingFiles];
+            clearQueue();
+            
+            uploadsInProgress = true;
+            
+            const tagsInput = document.getElementById('uploadTags').value;
+            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+            
+            if (tags.length > 0) {
+                tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
+                tagsHint.className = 'tags-hint';
+            } else {
+                tagsHint.innerHTML = '';
+            }
+            
+            let successCount = 0;
+            let errorCount = 0;
+            let total = filesToUpload.length;
+            
+            showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
+            
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const file = filesToUpload[i];
+                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowed.includes(ext)) {
+                    errorCount++;
+                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
+                    continue;
+                }
+
+                if (file.size > 100 * 1024 * 1024) {
+                    errorCount++;
+                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append('documento', file);
+                formData.append('tags', JSON.stringify(tags));
+
+                try {
+                    const response = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${currentToken}` },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.sucesso) {
+                        successCount++;
+                        showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
+                        addDocumentToLocalList(data.documento);
+                    } else {
+                        errorCount++;
+                        showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
+                    }
+                } catch (error) {
+                    errorCount++;
+                    showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
+                }
+                
+                await new Promise(r => setTimeout(r, 100));
+            }
+            
+            if (successCount > 0) {
+                showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success', true);
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
+                    tagsHint.className = 'tags-hint success';
+                    setTimeout(() => {
+                        tagsHint.innerHTML = '';
+                    }, 3000);
+                }
+                document.getElementById('uploadTags').value = '';
+            } else {
+                showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error', true);
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
+                    tagsHint.className = 'tags-hint error';
+                    setTimeout(() => {
+                        tagsHint.innerHTML = '';
+                    }, 3000);
+                }
+            }
+            uploadsInProgress = false;
+        }
+
+        document.getElementById('processQueueBtn').addEventListener('click', () => {
+            processQueue();
+        });
+
+        document.getElementById('clearQueueBtn').addEventListener('click', () => {
+            clearQueue();
+        });
+
+        // ==================== EVENTOS DE UPLOAD ====================
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const selectFileBtn = document.getElementById('selectFileBtn');
@@ -952,26 +1165,35 @@
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
         const bulkClearBtn = document.getElementById('bulkClearBtn');
 
-        // Elementos do modal de password
-        const changePasswordBtn = document.getElementById('changePasswordBtn');
-        const passwordModal = document.getElementById('passwordModal');
-        const closePasswordModal = document.getElementById('closePasswordModal');
-        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
-        const savePasswordBtn = document.getElementById('savePasswordBtn');
-        const currentPasswordInput = document.getElementById('currentPassword');
-        const newPasswordInput = document.getElementById('newPassword');
-        const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
-        const passwordMessage = document.getElementById('passwordMessage');
+        selectFileBtn.addEventListener('click', () => fileInput.click());
 
-        function showPasswordMessage(texto, tipo) {
-            passwordMessage.textContent = texto;
-            passwordMessage.className = `message ${tipo}`;
-            passwordMessage.style.display = 'block';
-            setTimeout(() => {
-                passwordMessage.style.display = 'none';
-            }, 4000);
-        }
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
 
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                addFilesToQueue(files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                addFilesToQueue(files);
+                fileInput.value = '';
+            }
+        });
+
+        // ==================== RESTO DO CÓDIGO (filtros, ordenação, etc.) ====================
         filterFavBtn.addEventListener('click', () => {
             showFavoritesOnly = !showFavoritesOnly;
             if (showFavoritesOnly) {
@@ -1185,121 +1407,6 @@
             else if (currentTagFilter) { currentTagFilter = ''; tagFilterSelect.value = ''; }
         }
 
-        selectFileBtn.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
-        uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('drag-over'); });
-        uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('drag-over'); const files = Array.from(e.dataTransfer.files); if (files.length > 0) uploadFiles(files); });
-        fileInput.addEventListener('change', (e) => { const files = Array.from(e.target.files); if (files.length > 0) uploadFiles(files); });
-
- async function uploadFiles(files) {
-    uploadsInProgress = true;
-    const tagsInput = document.getElementById('uploadTags').value;
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
-    
-    if (tags.length > 0) {
-        tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
-        tagsHint.className = 'tags-hint';
-    } else {
-        tagsHint.innerHTML = '';
-    }
-    
-    let successCount = 0;
-    let errorCount = 0;
-    let total = files.length;
-    
-    showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        
-        if (!allowed.includes(ext)) {
-            errorCount++;
-            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
-            continue;
-        }
-
-        if (file.size > 50 * 1024 * 1024) {
-            errorCount++;
-            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
-            continue;
-        }
-
-        const formData = new FormData();
-        formData.append('documento', file);
-        formData.append('tags', JSON.stringify(tags));
-
-        try {
-            const response = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${currentToken}` },
-                body: formData
-            });
-            const data = await response.json();
-            if (data.sucesso) {
-                successCount++;
-                showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
-                addDocumentToLocalList(data.documento);
-            } else {
-                errorCount++;
-                showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
-            }
-        } catch (error) {
-            errorCount++;
-            showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
-        }
-        
-        // Pequena pausa para o utilizador ver o progresso
-        await new Promise(r => setTimeout(r, 300));
-    }
-    
-    // Mensagem final
-    if (successCount > 0) {
-        showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!${errorCount > 0 ? ` (${errorCount} falhou)` : ''}`, 'success', true);
-        if (tags.length > 0) {
-            tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
-            tagsHint.className = 'tags-hint success';
-            setTimeout(() => {
-                tagsHint.innerHTML = '';
-            }, 3000);
-        }
-        document.getElementById('uploadTags').value = '';
-    } else {
-        showUploadStatus(`❌ Nenhum documento enviado. Verifique os formatos e tamanhos.`, 'error', true);
-        if (tags.length > 0) {
-            tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
-            tagsHint.className = 'tags-hint error';
-            setTimeout(() => {
-                tagsHint.innerHTML = '';
-            }, 3000);
-        }
-    }
-    uploadsInProgress = false;
-    fileInput.value = '';
-}
-
-     let uploadStatusTimeout = null;
-
-function showUploadStatus(msg, tipo, isFinal = false) {
-    if (uploadStatusTimeout) {
-        clearTimeout(uploadStatusTimeout);
-        uploadStatusTimeout = null;
-    }
-    
-    uploadStatus.textContent = msg;
-    uploadStatus.className = `upload-status ${tipo}`;
-    uploadStatus.style.display = 'block';
-    
-    if (isFinal) {
-        uploadStatusTimeout = setTimeout(() => {
-            uploadStatus.style.display = 'none';
-            uploadStatus.textContent = '';
-            uploadStatusTimeout = null;
-        }, 5000);
-    }
-}
-
         window.renameDocument = async (id, currentName) => {
             const newName = prompt('✏️ Novo nome do documento:', currentName);
             if (!newName || newName === currentName) return;
@@ -1436,11 +1543,7 @@ function showUploadStatus(msg, tipo, isFinal = false) {
         function formatDate(dateStr) { const date = new Date(dateStr); return date.toLocaleDateString('pt-PT') + ' ' + date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); }
         function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / (1024 * 1024)).toFixed(1) + ' MB'; }
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-   
-    function addDocumentToLocalList(doc) {
-    allDocuments.unshift(doc);
-    filterAndRenderDocuments();
-    }
+
         window.viewDocument = (id, name) => {
             modalTitle.textContent = name;
             const fileType = name.split('.').pop().toLowerCase();
@@ -1465,7 +1568,26 @@ function showUploadStatus(msg, tipo, isFinal = false) {
         closeModal.addEventListener('click', () => { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; });
         window.addEventListener('click', (e) => { if (e.target === viewModal) { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; } });
 
-        // Abrir modal de alterar password
+        // ==================== ALTERAR PASSWORD ====================
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const passwordModal = document.getElementById('passwordModal');
+        const closePasswordModal = document.getElementById('closePasswordModal');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+        const savePasswordBtn = document.getElementById('savePasswordBtn');
+        const currentPasswordInput = document.getElementById('currentPassword');
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+        const passwordMessage = document.getElementById('passwordMessage');
+
+        function showPasswordMessage(texto, tipo) {
+            passwordMessage.textContent = texto;
+            passwordMessage.className = `message ${tipo}`;
+            passwordMessage.style.display = 'block';
+            setTimeout(() => {
+                passwordMessage.style.display = 'none';
+            }, 4000);
+        }
+
         changePasswordBtn.addEventListener('click', () => {
             currentPasswordInput.value = '';
             newPasswordInput.value = '';
@@ -1499,18 +1621,6 @@ function showUploadStatus(msg, tipo, isFinal = false) {
         });
 
         loadDocuments();
-    window.addEventListener('beforeunload', (e) => {
-    if (uploadsInProgress) {
-        e.preventDefault();
-        e.returnValue = '⚠️ Existem uploads em andamento. Se sair agora, os ficheiros não terminados serão perdidos. Tem certeza?';
-        return e.returnValue;
-    }
-});
     </script>
-    <!-- Footer -->
-    <footer style="text-align: center; padding: 20px; background: #f8f9fa; border-top: 1px solid #e0e0e0; margin-top: 30px;">
-        <p style="font-size: 12px; color: #999;">📁 Meus Documentos • Guarde e organize os seus trabalhos</p>
-        <p style="font-size: 11px; color: #aaa; margin-top: 5px;">Desenvolvido por <span style="background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">⚡ Kent Fernandes</span></p>
-    </footer>
 </body>
 </html>
