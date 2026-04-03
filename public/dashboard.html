@@ -1220,7 +1220,7 @@
             continue;
         }
 
-        if (file.size > 100 * 1024 * 1024) {
+        if (file.size > 50 * 1024 * 1024) {
             errorCount++;
             showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
             continue;
