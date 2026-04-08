@@ -822,6 +822,64 @@
                 justify-content: center;
             }
         }
+        
+/* Modal de duplicados */
+#duplicatesModal .modal-content {
+    max-width: 600px;
+    height: auto;
+    border-radius: 16px;
+}
+
+.duplicate-group {
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.duplicate-header {
+    background: #f0f2f5;
+    padding: 10px 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.duplicate-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.duplicate-item:last-child {
+    border-bottom: none;
+}
+
+.duplicate-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.duplicate-name {
+    flex: 1;
+    font-size: 13px;
+}
+
+.duplicate-meta {
+    font-size: 11px;
+    color: #999;
+}
+
+.duplicate-keep {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+}
+
     </style>
 </head>
 <body>
@@ -871,8 +929,10 @@
             <h2>📋 Meus documentos</h2>
             
             <div class="filters-bar">
+                <button id="showDuplicatesBtn" class="filter-btn" style="background: #dc3545; color: white;">🔄 Duplicados</button>
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="🔍 Pesquisar por nome...">
+                    
                 </div>
                 <div class="filter-buttons" id="filterButtons">
                     <button class="filter-btn active" data-filter="todos">📁 Todos</button>
@@ -887,6 +947,7 @@
                     </select>
                     <small class="filter-hint">Clique numa tag para filtrar</small>
                 </div>
+                
                 <div class="sort-options">
                     <select id="sortSelect">
                         <option value="date_desc">📅 Mais recente primeiro</option>
@@ -1657,7 +1718,160 @@ async function processQueue() {
         return e.returnValue;
     }
 });
+// ==================== DETETAR DUPLICADOS ====================
+const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
+const duplicatesModal = document.getElementById('duplicatesModal');
+const closeDuplicatesModal = document.getElementById('closeDuplicatesModal');
+const duplicatesList = document.getElementById('duplicatesList');
+const duplicatesActions = document.getElementById('duplicatesActions');
+
+function findDuplicates() {
+    const seen = new Map();
+    const duplicates = [];
+    
+    allDocuments.forEach(doc => {
+        const key = `${doc.original_name}|${doc.file_size}`;
+        if (seen.has(key)) {
+            const group = seen.get(key);
+            group.push(doc);
+        } else {
+            seen.set(key, [doc]);
+        }
+    });
+    
+    // Filtrar grupos com mais de 1 documento
+    for (const [key, group] of seen) {
+        if (group.length > 1) {
+            const [name, size] = key.split('|');
+            duplicates.push({ name, size: parseInt(size), docs: group });
+        }
+    }
+    
+    return duplicates;
+}
+
+function renderDuplicatesModal() {
+    const duplicates = findDuplicates();
+    
+    if (duplicates.length === 0) {
+        duplicatesList.innerHTML = '<div style="text-align: center; padding: 40px;">📭 Nenhum ficheiro duplicado encontrado.</div>';
+        duplicatesActions.style.display = 'none';
+        return;
+    }
+    
+    let html = '';
+    let allCheckboxes = [];
+    
+    duplicates.forEach((group, groupIdx) => {
+        html += `
+            <div class="duplicate-group">
+                <div class="duplicate-header">
+                    📄 ${escapeHtml(group.name)} (${(group.size / 1024).toFixed(1)} KB) - ${group.docs.length} cópias
+                </div>
+        `;
+        
+        group.docs.forEach((doc, docIdx) => {
+            const isFirst = docIdx === 0;
+            html += `
+                <div class="duplicate-item">
+                    <input type="checkbox" class="duplicate-checkbox" data-id="${doc.id}" data-group="${groupIdx}" ${isFirst ? 'disabled checked' : ''}>
+                    <span class="duplicate-name">${escapeHtml(doc.original_name)}</span>
+                    <span class="duplicate-meta">${formatDate(doc.uploaded_at)}</span>
+                    ${isFirst ? '<span class="duplicate-keep">✓ Manter (primeiro)</span>' : '<span style="font-size: 11px; color: #999;">⬅️ Duplicado</span>'}
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    });
+    
+    duplicatesList.innerHTML = html;
+    duplicatesActions.style.display = 'block';
+    
+    // Adicionar evento de seleção em massa
+    const allCheckboxElements = document.querySelectorAll('.duplicate-checkbox:not([disabled])');
+    const selectAllContainer = document.createElement('div');
+    selectAllContainer.style.marginBottom = '15px';
+    selectAllContainer.style.display = 'flex';
+    selectAllContainer.style.alignItems = 'center';
+    selectAllContainer.style.gap = '10px';
+    selectAllContainer.innerHTML = `
+        <input type="checkbox" id="selectAllDuplicates">
+        <label for="selectAllDuplicates">Selecionar todos os duplicados (manter apenas o primeiro de cada grupo)</label>
+    `;
+    duplicatesList.insertBefore(selectAllContainer, duplicatesList.firstChild);
+    
+    const selectAllCheckbox = document.getElementById('selectAllDuplicates');
+    selectAllCheckbox.addEventListener('change', (e) => {
+        document.querySelectorAll('.duplicate-checkbox:not([disabled])').forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+    });
+}
+
+showDuplicatesBtn.addEventListener('click', () => {
+    renderDuplicatesModal();
+    duplicatesModal.style.display = 'flex';
+});
+
+closeDuplicatesModal.addEventListener('click', () => {
+    duplicatesModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target === duplicatesModal) {
+        duplicatesModal.style.display = 'none';
+    }
+});
+
+// Remover duplicados selecionados
+document.getElementById('deleteSelectedDuplicatesBtn').addEventListener('click', async () => {
+    const selectedIds = [];
+    document.querySelectorAll('.duplicate-checkbox:checked:not([disabled])').forEach(cb => {
+        selectedIds.push(parseInt(cb.dataset.id));
+    });
+    
+    if (selectedIds.length === 0) {
+        alert('Nenhum duplicado selecionado para remover.');
+        return;
+    }
+    
+    if (!confirm(`⚠️ Tem certeza que deseja remover ${selectedIds.length} ficheiro(s) duplicado(s)? Esta ação não pode ser desfeita.`)) return;
+    
+    let successCount = 0;
+    for (const id of selectedIds) {
+        try {
+            const response = await fetch(`${API_URL}/documents/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            });
+            const data = await response.json();
+            if (data.sucesso) successCount++;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    
+    alert(`✅ ${successCount} ficheiro(s) duplicado(s) removido(s)!`);
+    duplicatesModal.style.display = 'none';
+    loadDocuments();
+});
         loadDocuments();
     </script>
+<!-- Modal para duplicados -->
+<div id="duplicatesModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; height: auto; border-radius: 16px;">
+        <div class="modal-header">
+            <h3>🔄 Ficheiros Duplicados</h3>
+            <button class="modal-close" id="closeDuplicatesModal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; max-height: 500px; overflow-y: auto;">
+            <div id="duplicatesList"></div>
+            <div id="duplicatesActions" style="margin-top: 20px; display: none;">
+                <button id="deleteSelectedDuplicatesBtn" class="bulk-delete" style="width: 100%;">🗑️ Remover Selecionados</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
