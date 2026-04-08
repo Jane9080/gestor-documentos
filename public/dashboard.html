@@ -1370,21 +1370,27 @@
             if (currentSearch) {
                 filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
             }
-            if (showDuplicatesOnly) {
-                const seen = new Map();
-                const duplicateIds = new Set();
-                allDocuments.forEach(doc => {
-                    const key = `${doc.original_name}|${doc.file_size}`;
-                    if (seen.has(key)) {
-                        const existingId = seen.get(key);
-                        duplicateIds.add(existingId);
-                        duplicateIds.add(doc.id);
-                    } else {
-                        seen.set(key, doc.id);
-                    }
-                });
-                filtered = filtered.filter(doc => duplicateIds.has(doc.id));
-            }
+           if (showDuplicatesOnly) {
+    const seen = new Map();
+    const duplicateIds = new Set(); // IDs dos duplicados (para remover)
+    const originalIds = new Set();  // IDs dos originais (para manter)
+    
+    // Primeiro, identificar originais e duplicados
+    allDocuments.forEach(doc => {
+        const key = `${doc.original_name}|${doc.file_size}`;
+        if (seen.has(key)) {
+            // Já existe um original, este é duplicado
+            duplicateIds.add(doc.id);
+        } else {
+            // É o primeiro (original)
+            seen.set(key, doc.id);
+            originalIds.add(doc.id);
+        }
+    });
+    
+    // Filtrar: mostrar APENAS os duplicados (não os originais)
+    filtered = filtered.filter(doc => duplicateIds.has(doc.id));
+}
             return filtered;
         }
 
