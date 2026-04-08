@@ -296,6 +296,22 @@
             color: #333;
         }
 
+        .filter-duplicate-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: #dc3545;
+            color: white;
+        }
+
+        .filter-duplicate-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+
         .tag-filter select {
             padding: 8px 12px;
             border: 2px solid #e0e0e0;
@@ -794,62 +810,6 @@
             padding: 20px;
         }
 
-        #duplicatesModal .modal-content {
-            max-width: 600px;
-            height: auto;
-            border-radius: 16px;
-        }
-
-        .duplicate-group {
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .duplicate-header {
-            background: #f0f2f5;
-            padding: 10px 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .duplicate-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .duplicate-item:last-child {
-            border-bottom: none;
-        }
-
-        .duplicate-checkbox {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .duplicate-name {
-            flex: 1;
-            font-size: 13px;
-        }
-
-        .duplicate-meta {
-            font-size: 11px;
-            color: #999;
-        }
-
-        .duplicate-keep {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-        }
-
         footer {
             text-align: center;
             padding: 20px;
@@ -933,7 +893,7 @@
                     <button class="filter-btn" data-filter="powerpoint">📊 PowerPoint</button>
                 </div>
                 <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
-                <button id="showDuplicatesBtn" class="filter-btn" style="background: #dc3545; color: white;">🔄 Duplicados</button>
+                <button id="filterDuplicateBtn" class="filter-duplicate-btn">🔄 Duplicados</button>
                 <div class="tag-filter">
                     <select id="tagFilterSelect">
                         <option value="">🏷️ Todas as tags</option>
@@ -1018,22 +978,6 @@
         </div>
     </div>
 
-    <!-- Modal para duplicados -->
-    <div id="duplicatesModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px; height: auto; border-radius: 16px;">
-            <div class="modal-header">
-                <h3>🔄 Ficheiros Duplicados</h3>
-                <button class="modal-close" id="closeDuplicatesModal">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px; max-height: 500px; overflow-y: auto;">
-                <div id="duplicatesList"></div>
-                <div id="duplicatesActions" style="margin-top: 20px; display: none;">
-                    <button id="deleteSelectedDuplicatesBtn" class="bulk-delete" style="width: 100%;">🗑️ Remover Selecionados</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <footer>
         <p>📁 Meus Documentos • Guarde e organize os seus trabalhos</p>
         <p style="margin-top: 5px;">Desenvolvido por <span style="background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">⚡ Kent Fernandes</span></p>
@@ -1050,6 +994,7 @@
         let currentView = 'grid';
         let currentSort = 'date_desc';
         let showFavoritesOnly = false;
+        let showDuplicatesOnly = false;
         let selectedDocuments = new Set();
         let uploadsInProgress = false;
         let pendingFiles = [];
@@ -1252,11 +1197,7 @@
         const searchInput = document.getElementById('searchInput');
         const filterButtons = document.getElementById('filterButtons');
         const filterFavBtn = document.getElementById('filterFavBtn');
-        const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
-        const duplicatesModal = document.getElementById('duplicatesModal');
-        const closeDuplicatesModal = document.getElementById('closeDuplicatesModal');
-        const duplicatesList = document.getElementById('duplicatesList');
-        const duplicatesActions = document.getElementById('duplicatesActions');
+        const filterDuplicateBtn = document.getElementById('filterDuplicateBtn');
         const tagFilterSelect = document.getElementById('tagFilterSelect');
         const sortSelect = document.getElementById('sortSelect');
         const gridViewBtn = document.getElementById('gridViewBtn');
@@ -1297,142 +1238,16 @@
             }
         });
 
-        // ==================== DUPLICADOS ====================
-        function findDuplicates() {
-            const seen = new Map();
-            const duplicates = [];
-            
-            allDocuments.forEach(doc => {
-                const key = `${doc.original_name}|${doc.file_size}`;
-                if (seen.has(key)) {
-                    const group = seen.get(key);
-                    group.push(doc);
-                } else {
-                    seen.set(key, [doc]);
-                }
-            });
-            
-            for (const [key, group] of seen) {
-                if (group.length > 1) {
-                    const [name, size] = key.split('|');
-                    duplicates.push({ name, size: parseInt(size), docs: group });
-                }
+        // ==================== FILTRO DE DUPLICADOS ====================
+        filterDuplicateBtn.addEventListener('click', () => {
+            showDuplicatesOnly = !showDuplicatesOnly;
+            if (showDuplicatesOnly) {
+                filterDuplicateBtn.classList.add('active');
+            } else {
+                filterDuplicateBtn.classList.remove('active');
             }
-            
-            return duplicates;
-        }
-
-        function renderDuplicatesModal() {
-            const duplicates = findDuplicates();
-            
-            if (duplicates.length === 0) {
-                duplicatesList.innerHTML = '<div style="text-align: center; padding: 40px;">📭 Nenhum ficheiro duplicado encontrado.</div>';
-                duplicatesActions.style.display = 'none';
-                return;
-            }
-            
-            let html = '';
-            
-            duplicates.forEach((group, groupIdx) => {
-                html += `
-                    <div class="duplicate-group">
-                        <div class="duplicate-header">
-                            📄 ${escapeHtml(group.name)} (${(group.size / 1024).toFixed(1)} KB) - ${group.docs.length} cópias
-                        </div>
-                `;
-                
-                group.docs.forEach((doc, docIdx) => {
-                    const isFirst = docIdx === 0;
-                    html += `
-                        <div class="duplicate-item">
-                            <input type="checkbox" class="duplicate-checkbox" data-id="${doc.id}" data-group="${groupIdx}" ${isFirst ? 'disabled checked' : ''}>
-                            <span class="duplicate-name">${escapeHtml(doc.original_name)}</span>
-                            <span class="duplicate-meta">${formatDate(doc.uploaded_at)}</span>
-                            ${isFirst ? '<span class="duplicate-keep">✓ Manter (primeiro)</span>' : '<span style="font-size: 11px; color: #999;">⬅️ Duplicado</span>'}
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-            });
-            
-            duplicatesList.innerHTML = html;
-            duplicatesActions.style.display = 'block';
-            
-            const selectAllContainer = document.createElement('div');
-            selectAllContainer.style.marginBottom = '15px';
-            selectAllContainer.style.display = 'flex';
-            selectAllContainer.style.alignItems = 'center';
-            selectAllContainer.style.gap = '10px';
-            selectAllContainer.innerHTML = `
-                <input type="checkbox" id="selectAllDuplicates">
-                <label for="selectAllDuplicates">Selecionar todos os duplicados (manter apenas o primeiro de cada grupo)</label>
-            `;
-            duplicatesList.insertBefore(selectAllContainer, duplicatesList.firstChild);
-            
-            const selectAllDuplicates = document.getElementById('selectAllDuplicates');
-            if (selectAllDuplicates) {
-                selectAllDuplicates.addEventListener('change', (e) => {
-                    document.querySelectorAll('.duplicate-checkbox:not([disabled])').forEach(cb => {
-                        cb.checked = e.target.checked;
-                    });
-                });
-            }
-        }
-
-        if (showDuplicatesBtn) {
-            showDuplicatesBtn.addEventListener('click', () => {
-                renderDuplicatesModal();
-                duplicatesModal.style.display = 'flex';
-            });
-        }
-
-        if (closeDuplicatesModal) {
-            closeDuplicatesModal.addEventListener('click', () => {
-                duplicatesModal.style.display = 'none';
-            });
-        }
-
-        window.addEventListener('click', (e) => {
-            if (e.target === duplicatesModal) {
-                duplicatesModal.style.display = 'none';
-            }
+            filterAndRenderDocuments();
         });
-
-        const deleteSelectedDuplicatesBtn = document.getElementById('deleteSelectedDuplicatesBtn');
-        if (deleteSelectedDuplicatesBtn) {
-            deleteSelectedDuplicatesBtn.addEventListener('click', async () => {
-                const selectedIds = [];
-                document.querySelectorAll('.duplicate-checkbox:checked:not([disabled])').forEach(cb => {
-                    selectedIds.push(parseInt(cb.dataset.id));
-                });
-                
-                if (selectedIds.length === 0) {
-                    alert('Nenhum duplicado selecionado para remover.');
-                    return;
-                }
-                
-                if (!confirm(`⚠️ Tem certeza que deseja remover ${selectedIds.length} ficheiro(s) duplicado(s)? Esta ação não pode ser desfeita.`)) return;
-                
-                let successCount = 0;
-                for (const id of selectedIds) {
-                    try {
-                        const response = await fetch(`${API_URL}/documents/${id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${currentToken}` }
-                        });
-                        const data = await response.json();
-                        if (data.sucesso) successCount++;
-                    } catch (error) {
-                        console.error(error);
-                    }
-                }
-                
-                alert(`✅ ${successCount} ficheiro(s) duplicado(s) removido(s)!`);
-                duplicatesModal.style.display = 'none';
-                loadDocuments();
-            });
-        }
 
         // ==================== RESTO DO CÓDIGO ====================
         filterFavBtn.addEventListener('click', () => {
@@ -1543,10 +1358,33 @@
 
         function getCurrentDisplayedDocuments() {
             let filtered = [...allDocuments];
-            if (currentFilter !== 'todos') filtered = filtered.filter(doc => doc.file_type === currentFilter);
-            if (showFavoritesOnly) filtered = filtered.filter(doc => doc.favorite === 1);
-            if (currentTagFilter) filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
-            if (currentSearch) filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
+            if (currentFilter !== 'todos') {
+                filtered = filtered.filter(doc => doc.file_type === currentFilter);
+            }
+            if (showFavoritesOnly) {
+                filtered = filtered.filter(doc => doc.favorite === 1);
+            }
+            if (currentTagFilter) {
+                filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
+            }
+            if (currentSearch) {
+                filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
+            }
+            if (showDuplicatesOnly) {
+                const seen = new Map();
+                const duplicateIds = new Set();
+                allDocuments.forEach(doc => {
+                    const key = `${doc.original_name}|${doc.file_size}`;
+                    if (seen.has(key)) {
+                        const existingId = seen.get(key);
+                        duplicateIds.add(existingId);
+                        duplicateIds.add(doc.id);
+                    } else {
+                        seen.set(key, doc.id);
+                    }
+                });
+                filtered = filtered.filter(doc => duplicateIds.has(doc.id));
+            }
             return filtered;
         }
 
@@ -1601,7 +1439,7 @@
 
         filterButtons.addEventListener('click', (e) => {
             const btn = e.target.closest('.filter-btn');
-            if (!btn || btn.id === 'filterFavBtn') return;
+            if (!btn || btn.id === 'filterFavBtn' || btn.id === 'filterDuplicateBtn') return;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFilter = btn.dataset.filter;
@@ -1618,6 +1456,21 @@
             if (showFavoritesOnly) filtered = filtered.filter(doc => doc.favorite === 1);
             if (currentTagFilter) filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
             if (currentSearch) filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
+            if (showDuplicatesOnly) {
+                const seen = new Map();
+                const duplicateIds = new Set();
+                allDocuments.forEach(doc => {
+                    const key = `${doc.original_name}|${doc.file_size}`;
+                    if (seen.has(key)) {
+                        const existingId = seen.get(key);
+                        duplicateIds.add(existingId);
+                        duplicateIds.add(doc.id);
+                    } else {
+                        seen.set(key, doc.id);
+                    }
+                });
+                filtered = filtered.filter(doc => duplicateIds.has(doc.id));
+            }
             filtered = sortDocuments(filtered);
             renderDocuments(filtered);
             updateStats(allDocuments);
