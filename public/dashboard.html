@@ -1355,44 +1355,71 @@
             updateBulkActions();
             filterAndRenderDocuments();
         }
-
-        function getCurrentDisplayedDocuments() {
-            let filtered = [...allDocuments];
-            if (currentFilter !== 'todos') {
-                filtered = filtered.filter(doc => doc.file_type === currentFilter);
-            }
-            if (showFavoritesOnly) {
-                filtered = filtered.filter(doc => doc.favorite === 1);
-            }
-            if (currentTagFilter) {
-                filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
-            }
-            if (currentSearch) {
-                filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
-            }
-           if (showDuplicatesOnly) {
-    const seen = new Map();
-    const duplicateIds = new Set(); // IDs dos duplicados (para remover)
-    const originalIds = new Set();  // IDs dos originais (para manter)
+function getCurrentDisplayedDocuments() {
+    let filtered = [...allDocuments];
     
-    // Primeiro, identificar originais e duplicados
-    allDocuments.forEach(doc => {
-        const key = `${doc.original_name}|${doc.file_size}`;
-        if (seen.has(key)) {
-            // Já existe um original, este é duplicado
-            duplicateIds.add(doc.id);
-        } else {
-            // É o primeiro (original)
-            seen.set(key, doc.id);
-            originalIds.add(doc.id);
+    // Filtrar por tipo
+    if (currentFilter !== 'todos') {
+        filtered = filtered.filter(doc => doc.file_type === currentFilter);
+    }
+    
+    // Filtrar por favoritos
+    if (showFavoritesOnly) {
+        filtered = filtered.filter(doc => doc.favorite === 1);
+    }
+    
+    // Filtrar por tags
+    if (currentTagFilter) {
+        filtered = filtered.filter(doc => doc.tags && doc.tags.includes(currentTagFilter));
+    }
+    
+    // Filtrar por pesquisa
+    if (currentSearch) {
+        filtered = filtered.filter(doc => 
+            doc.original_name.toLowerCase().includes(currentSearch)
+        );
+    }
+    
+    // 🔥 FILTRAR POR DUPLICADOS (APENAS OS DUPLICADOS, NÃO O ORIGINAL)
+    if (showDuplicatesOnly) {
+        // Contar quantas vezes cada nome+tamanho aparece
+        const countMap = new Map();
+        allDocuments.forEach(doc => {
+            const key = `${doc.original_name}|${doc.file_size}`;
+            countMap.set(key, (countMap.get(key) || 0) + 1);
+        });
+        
+        // Identificar quais documentos são duplicados (aparecem mais de uma vez)
+        const duplicateKeys = new Set();
+        for (const [key, count] of countMap) {
+            if (count > 1) {
+                duplicateKeys.add(key);
+            }
         }
-    });
+        
+        // Agora, para cada documento, se a chave está em duplicateKeys,
+        // precisamos saber se é o primeiro ou não
+        const firstOccurrence = new Map();
+        const duplicateIds = new Set();
+        
+        // Primeiro, marcar o primeiro de cada grupo como "original"
+        allDocuments.forEach(doc => {
+            const key = `${doc.original_name}|${doc.file_size}`;
+            if (duplicateKeys.has(key)) {
+                if (!firstOccurrence.has(key)) {
+                    firstOccurrence.set(key, doc.id); // primeiro é o original
+                } else {
+                    duplicateIds.add(doc.id); // os outros são duplicados
+                }
+            }
+        });
+        
+        // Filtrar: mostrar APENAS os duplicados
+        filtered = filtered.filter(doc => duplicateIds.has(doc.id));
+    }
     
-    // Filtrar: mostrar APENAS os duplicados (não os originais)
-    filtered = filtered.filter(doc => duplicateIds.has(doc.id));
+    return filtered;
 }
-            return filtered;
-        }
 
         selectAllCheckbox.addEventListener('change', (e) => selectAll(e.target.checked));
         bulkClearBtn.addEventListener('click', () => { selectedDocuments.clear(); updateBulkActions(); filterAndRenderDocuments(); });
@@ -1456,7 +1483,10 @@
         sortSelect.addEventListener('change', (e) => { currentSort = e.target.value; filterAndRenderDocuments(); });
         searchInput.addEventListener('input', (e) => { currentSearch = e.target.value.toLowerCase(); filterAndRenderDocuments(); });
 
+        
         function filterAndRenderDocuments() {
+            console.log('showDuplicatesOnly:', showDuplicatesOnly);
+            console.log('Total documentos:', allDocuments.length);
             let filtered = [...allDocuments];
             if (currentFilter !== 'todos') filtered = filtered.filter(doc => doc.file_type === currentFilter);
             if (showFavoritesOnly) filtered = filtered.filter(doc => doc.favorite === 1);
