@@ -1482,21 +1482,37 @@
             updateTagFilter(allDocuments);
         }
 
-        function updateStats(docs) {
-            const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
-            const wordCount = docs.filter(d => d.file_type === 'word').length;
-            const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
-            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint'].includes(d.file_type)).length;
-            const favCount = docs.filter(d => d.favorite === 1).length;
-            document.getElementById('stats').innerHTML = `
-                <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
-                <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
-                <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
-                <div class="stat-item"><span class="stat-icon">📎</span> Outros: ${outrosCount}</div>
-                <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
-                <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
-            `;
+    function updateStats(docs) {
+    const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
+    const wordCount = docs.filter(d => d.file_type === 'word').length;
+    const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
+    const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint'].includes(d.file_type)).length;
+    const favCount = docs.filter(d => d.favorite === 1).length;
+    
+    // Calcular número de ficheiros duplicados (cópias, não os originais)
+    const seen = new Map();
+    let duplicatesCount = 0;
+    
+    docs.forEach(doc => {
+        const key = `${doc.original_name}|${doc.file_size}`;
+        if (seen.has(key)) {
+            // É duplicado (cópia)
+            duplicatesCount++;
+        } else {
+            seen.set(key, doc.id);
         }
+    });
+    
+    document.getElementById('stats').innerHTML = `
+        <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
+        <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
+        <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
+        <div class="stat-item"><span class="stat-icon">📎</span> Outros: ${outrosCount}</div>
+        <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
+        <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
+        <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+    `;
+}
 
         function updateTagFilter(docs) {
             const allTags = new Set();
