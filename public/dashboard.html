@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZL3EK8YLQS"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-ZL3EK8YLQS');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZL3EK8YLQS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-ZL3EK8YLQS');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentos - Meus Arquivos</title>
     <style>
@@ -199,7 +198,6 @@
             display: block;
         }
 
-        /* Fila de upload */
         .queue-container {
             margin-top: 15px;
             display: none;
@@ -718,7 +716,6 @@
             color: #999;
         }
 
-        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -787,7 +784,6 @@
             display: block;
         }
 
-        /* Modal de password */
         #passwordModal .modal-content {
             max-width: 400px;
             height: auto;
@@ -796,6 +792,62 @@
 
         #passwordModal .modal-body {
             padding: 20px;
+        }
+
+        #duplicatesModal .modal-content {
+            max-width: 600px;
+            height: auto;
+            border-radius: 16px;
+        }
+
+        .duplicate-group {
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .duplicate-header {
+            background: #f0f2f5;
+            padding: 10px 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .duplicate-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .duplicate-item:last-child {
+            border-bottom: none;
+        }
+
+        .duplicate-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .duplicate-name {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .duplicate-meta {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .duplicate-keep {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
         }
 
         footer {
@@ -822,64 +874,6 @@
                 justify-content: center;
             }
         }
-        
-/* Modal de duplicados */
-#duplicatesModal .modal-content {
-    max-width: 600px;
-    height: auto;
-    border-radius: 16px;
-}
-
-.duplicate-group {
-    margin-bottom: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.duplicate-header {
-    background: #f0f2f5;
-    padding: 10px 15px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.duplicate-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 15px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.duplicate-item:last-child {
-    border-bottom: none;
-}
-
-.duplicate-checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
-
-.duplicate-name {
-    flex: 1;
-    font-size: 13px;
-}
-
-.duplicate-meta {
-    font-size: 11px;
-    color: #999;
-}
-
-.duplicate-keep {
-    background: #d1fae5;
-    color: #065f46;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-}
-
     </style>
 </head>
 <body>
@@ -929,26 +923,23 @@
             <h2>📋 Meus documentos</h2>
             
             <div class="filters-bar">
-               
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="🔍 Pesquisar por nome...">
-                    
                 </div>
                 <div class="filter-buttons" id="filterButtons">
                     <button class="filter-btn active" data-filter="todos">📁 Todos</button>
-                     <button id="showDuplicatesBtn" class="filter-btn" style="background: #dc3545; color: white;">🔄 Duplicados</button>
                     <button class="filter-btn" data-filter="pdf">📄 PDF</button>
                     <button class="filter-btn" data-filter="word">📝 Word</button>
                     <button class="filter-btn" data-filter="powerpoint">📊 PowerPoint</button>
                 </div>
                 <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
+                <button id="showDuplicatesBtn" class="filter-btn" style="background: #dc3545; color: white;">🔄 Duplicados</button>
                 <div class="tag-filter">
                     <select id="tagFilterSelect">
                         <option value="">🏷️ Todas as tags</option>
                     </select>
                     <small class="filter-hint">Clique numa tag para filtrar</small>
                 </div>
-                
                 <div class="sort-options">
                     <select id="sortSelect">
                         <option value="date_desc">📅 Mais recente primeiro</option>
@@ -1022,6 +1013,22 @@
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button id="savePasswordBtn" style="flex: 1; background: #2a5298;">Salvar</button>
                     <button id="cancelPasswordBtn" style="flex: 1; background: #6c757d;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para duplicados -->
+    <div id="duplicatesModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; height: auto; border-radius: 16px;">
+            <div class="modal-header">
+                <h3>🔄 Ficheiros Duplicados</h3>
+                <button class="modal-close" id="closeDuplicatesModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px; max-height: 500px; overflow-y: auto;">
+                <div id="duplicatesList"></div>
+                <div id="duplicatesActions" style="margin-top: 20px; display: none;">
+                    <button id="deleteSelectedDuplicatesBtn" class="bulk-delete" style="width: 100%;">🗑️ Remover Selecionados</button>
                 </div>
             </div>
         </div>
@@ -1111,118 +1118,118 @@
             allDocuments.unshift(doc);
             filterAndRenderDocuments();
         }
-async function processQueue() {
-    if (pendingFiles.length === 0) return;
-    
-    const filesToUpload = [...pendingFiles];
-    clearQueue();
-    
-    uploadsInProgress = true;
-    
-    const tagsInput = document.getElementById('uploadTags').value;
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
-    
-    if (tags.length > 0) {
-        tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
-        tagsHint.className = 'tags-hint';
-    } else {
-        tagsHint.innerHTML = '';
-    }
-    
-    let successCount = 0;
-    let errorCount = 0;
-    let errorDetails = [];
-    let total = filesToUpload.length;
-    
-    showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
-    
-    for (let i = 0; i < filesToUpload.length; i++) {
-        const file = filesToUpload[i];
-        const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        
-        if (!allowed.includes(ext)) {
-            errorCount++;
-            errorDetails.push(`"${file.name}" - formato não suportado (${ext})`);
-            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
-            continue;
-        }
 
-        if (file.size > 100 * 1024 * 1024) {
-            errorCount++;
-            errorDetails.push(`"${file.name}" - ficheiro muito grande (${(file.size / (1024*1024)).toFixed(1)}MB > 100MB)`);
-            showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
-            continue;
-        }
-
-        const formData = new FormData();
-        formData.append('documento', file);
-        formData.append('tags', JSON.stringify(tags));
-
-        try {
-            const response = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${currentToken}` },
-                body: formData
-            });
-            const data = await response.json();
-            if (data.sucesso) {
-                successCount++;
-                showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
-                addDocumentToLocalList(data.documento);
+        async function processQueue() {
+            if (pendingFiles.length === 0) return;
+            
+            const filesToUpload = [...pendingFiles];
+            clearQueue();
+            
+            uploadsInProgress = true;
+            
+            const tagsInput = document.getElementById('uploadTags').value;
+            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+            
+            if (tags.length > 0) {
+                tagsHint.innerHTML = `🏷️ A aplicar ${tags.length} tag(s): ${tags.join(', ')}`;
+                tagsHint.className = 'tags-hint';
             } else {
-                errorCount++;
-                errorDetails.push(`"${file.name}" - erro do servidor: ${data.erro || 'desconhecido'}`);
-                showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
+                tagsHint.innerHTML = '';
             }
-        } catch (error) {
-            errorCount++;
-            errorDetails.push(`"${file.name}" - erro de conexão: ${error.message || 'falha na rede'}`);
-            showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            let errorDetails = [];
+            let total = filesToUpload.length;
+            
+            showUploadStatus(`⏳ A preparar envio de ${total} ficheiro(s)...`, 'loading');
+            
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const file = filesToUpload[i];
+                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowed.includes(ext)) {
+                    errorCount++;
+                    errorDetails.push(`"${file.name}" - formato não suportado (${ext})`);
+                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
+                    continue;
+                }
+
+                if (file.size > 100 * 1024 * 1024) {
+                    errorCount++;
+                    errorDetails.push(`"${file.name}" - ficheiro muito grande (${(file.size / (1024*1024)).toFixed(1)}MB > 100MB)`);
+                    showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - muito grande (máx 100MB)`, 'loading');
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append('documento', file);
+                formData.append('tags', JSON.stringify(tags));
+
+                try {
+                    const response = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${currentToken}` },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.sucesso) {
+                        successCount++;
+                        showUploadStatus(`✅ Ficheiro ${i+1}/${total}: "${file.name}" - enviado com sucesso!`, 'loading');
+                        addDocumentToLocalList(data.documento);
+                    } else {
+                        errorCount++;
+                        errorDetails.push(`"${file.name}" - erro do servidor: ${data.erro || 'desconhecido'}`);
+                        showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro ao enviar`, 'loading');
+                    }
+                } catch (error) {
+                    errorCount++;
+                    errorDetails.push(`"${file.name}" - erro de conexão: ${error.message || 'falha na rede'}`);
+                    showUploadStatus(`❌ Ficheiro ${i+1}/${total}: "${file.name}" - erro de conexão`, 'loading');
+                }
+                
+                await new Promise(r => setTimeout(r, 100));
+            }
+            
+            if (successCount > 0 && errorCount === 0) {
+                showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!`, 'success', true);
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
+                    tagsHint.className = 'tags-hint success';
+                    setTimeout(() => {
+                        tagsHint.innerHTML = '';
+                    }, 3000);
+                }
+                document.getElementById('uploadTags').value = '';
+            } else if (successCount > 0 && errorCount > 0) {
+                showUploadStatus(`⚠️ Parcial: ${successCount} ok, ${errorCount} falhou. Ver detalhes abaixo.`, 'loading', true);
+                if (errorDetails.length > 0) {
+                    tagsHint.innerHTML = `❌ Falhas: ${errorDetails.slice(0, 3).join(', ')}${errorDetails.length > 3 ? '...' : ''}`;
+                    tagsHint.className = 'tags-hint error';
+                    setTimeout(() => {
+                        tagsHint.innerHTML = '';
+                    }, 8000);
+                }
+            } else {
+                let errorMsg = `❌ Nenhum documento enviado. `;
+                if (errorDetails.length > 0) {
+                    errorMsg += `Motivos: ${errorDetails.slice(0, 2).join(', ')}`;
+                    if (errorDetails.length > 2) errorMsg += ` e mais ${errorDetails.length - 2} erro(s)`;
+                } else {
+                    errorMsg += `Verifique a ligação à internet e tente novamente.`;
+                }
+                showUploadStatus(errorMsg, 'error', true);
+                if (tags.length > 0) {
+                    tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
+                    tagsHint.className = 'tags-hint error';
+                    setTimeout(() => {
+                        tagsHint.innerHTML = '';
+                    }, 5000);
+                }
+            }
+            uploadsInProgress = false;
         }
-        
-        await new Promise(r => setTimeout(r, 100));
-    }
-    
-    // Mensagem final detalhada
-    if (successCount > 0 && errorCount === 0) {
-        showUploadStatus(`✅ ${successCount} documento(s) enviado(s) com sucesso!`, 'success', true);
-        if (tags.length > 0) {
-            tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
-            tagsHint.className = 'tags-hint success';
-            setTimeout(() => {
-                tagsHint.innerHTML = '';
-            }, 3000);
-        }
-        document.getElementById('uploadTags').value = '';
-    } else if (successCount > 0 && errorCount > 0) {
-        showUploadStatus(`⚠️ Parcial: ${successCount} ok, ${errorCount} falhou. Ver detalhes abaixo.`, 'loading', true);
-        if (errorDetails.length > 0) {
-            tagsHint.innerHTML = `❌ Falhas: ${errorDetails.slice(0, 3).join(', ')}${errorDetails.length > 3 ? '...' : ''}`;
-            tagsHint.className = 'tags-hint error';
-            setTimeout(() => {
-                tagsHint.innerHTML = '';
-            }, 8000);
-        }
-    } else {
-        let errorMsg = `❌ Nenhum documento enviado. `;
-        if (errorDetails.length > 0) {
-            errorMsg += `Motivos: ${errorDetails.slice(0, 2).join(', ')}`;
-            if (errorDetails.length > 2) errorMsg += ` e mais ${errorDetails.length - 2} erro(s)`;
-        } else {
-            errorMsg += `Verifique a ligação à internet e tente novamente.`;
-        }
-        showUploadStatus(errorMsg, 'error', true);
-        if (tags.length > 0) {
-            tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
-            tagsHint.className = 'tags-hint error';
-            setTimeout(() => {
-                tagsHint.innerHTML = '';
-            }, 5000);
-        }
-    }
-    uploadsInProgress = false;
-}
 
         document.getElementById('processQueueBtn').addEventListener('click', () => {
             processQueue();
@@ -1245,6 +1252,11 @@ async function processQueue() {
         const searchInput = document.getElementById('searchInput');
         const filterButtons = document.getElementById('filterButtons');
         const filterFavBtn = document.getElementById('filterFavBtn');
+        const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
+        const duplicatesModal = document.getElementById('duplicatesModal');
+        const closeDuplicatesModal = document.getElementById('closeDuplicatesModal');
+        const duplicatesList = document.getElementById('duplicatesList');
+        const duplicatesActions = document.getElementById('duplicatesActions');
         const tagFilterSelect = document.getElementById('tagFilterSelect');
         const sortSelect = document.getElementById('sortSelect');
         const gridViewBtn = document.getElementById('gridViewBtn');
@@ -1285,7 +1297,144 @@ async function processQueue() {
             }
         });
 
-        // ==================== RESTO DO CÓDIGO (filtros, ordenação, etc.) ====================
+        // ==================== DUPLICADOS ====================
+        function findDuplicates() {
+            const seen = new Map();
+            const duplicates = [];
+            
+            allDocuments.forEach(doc => {
+                const key = `${doc.original_name}|${doc.file_size}`;
+                if (seen.has(key)) {
+                    const group = seen.get(key);
+                    group.push(doc);
+                } else {
+                    seen.set(key, [doc]);
+                }
+            });
+            
+            for (const [key, group] of seen) {
+                if (group.length > 1) {
+                    const [name, size] = key.split('|');
+                    duplicates.push({ name, size: parseInt(size), docs: group });
+                }
+            }
+            
+            return duplicates;
+        }
+
+        function renderDuplicatesModal() {
+            const duplicates = findDuplicates();
+            
+            if (duplicates.length === 0) {
+                duplicatesList.innerHTML = '<div style="text-align: center; padding: 40px;">📭 Nenhum ficheiro duplicado encontrado.</div>';
+                duplicatesActions.style.display = 'none';
+                return;
+            }
+            
+            let html = '';
+            
+            duplicates.forEach((group, groupIdx) => {
+                html += `
+                    <div class="duplicate-group">
+                        <div class="duplicate-header">
+                            📄 ${escapeHtml(group.name)} (${(group.size / 1024).toFixed(1)} KB) - ${group.docs.length} cópias
+                        </div>
+                `;
+                
+                group.docs.forEach((doc, docIdx) => {
+                    const isFirst = docIdx === 0;
+                    html += `
+                        <div class="duplicate-item">
+                            <input type="checkbox" class="duplicate-checkbox" data-id="${doc.id}" data-group="${groupIdx}" ${isFirst ? 'disabled checked' : ''}>
+                            <span class="duplicate-name">${escapeHtml(doc.original_name)}</span>
+                            <span class="duplicate-meta">${formatDate(doc.uploaded_at)}</span>
+                            ${isFirst ? '<span class="duplicate-keep">✓ Manter (primeiro)</span>' : '<span style="font-size: 11px; color: #999;">⬅️ Duplicado</span>'}
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            });
+            
+            duplicatesList.innerHTML = html;
+            duplicatesActions.style.display = 'block';
+            
+            const selectAllContainer = document.createElement('div');
+            selectAllContainer.style.marginBottom = '15px';
+            selectAllContainer.style.display = 'flex';
+            selectAllContainer.style.alignItems = 'center';
+            selectAllContainer.style.gap = '10px';
+            selectAllContainer.innerHTML = `
+                <input type="checkbox" id="selectAllDuplicates">
+                <label for="selectAllDuplicates">Selecionar todos os duplicados (manter apenas o primeiro de cada grupo)</label>
+            `;
+            duplicatesList.insertBefore(selectAllContainer, duplicatesList.firstChild);
+            
+            const selectAllDuplicates = document.getElementById('selectAllDuplicates');
+            if (selectAllDuplicates) {
+                selectAllDuplicates.addEventListener('change', (e) => {
+                    document.querySelectorAll('.duplicate-checkbox:not([disabled])').forEach(cb => {
+                        cb.checked = e.target.checked;
+                    });
+                });
+            }
+        }
+
+        if (showDuplicatesBtn) {
+            showDuplicatesBtn.addEventListener('click', () => {
+                renderDuplicatesModal();
+                duplicatesModal.style.display = 'flex';
+            });
+        }
+
+        if (closeDuplicatesModal) {
+            closeDuplicatesModal.addEventListener('click', () => {
+                duplicatesModal.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === duplicatesModal) {
+                duplicatesModal.style.display = 'none';
+            }
+        });
+
+        const deleteSelectedDuplicatesBtn = document.getElementById('deleteSelectedDuplicatesBtn');
+        if (deleteSelectedDuplicatesBtn) {
+            deleteSelectedDuplicatesBtn.addEventListener('click', async () => {
+                const selectedIds = [];
+                document.querySelectorAll('.duplicate-checkbox:checked:not([disabled])').forEach(cb => {
+                    selectedIds.push(parseInt(cb.dataset.id));
+                });
+                
+                if (selectedIds.length === 0) {
+                    alert('Nenhum duplicado selecionado para remover.');
+                    return;
+                }
+                
+                if (!confirm(`⚠️ Tem certeza que deseja remover ${selectedIds.length} ficheiro(s) duplicado(s)? Esta ação não pode ser desfeita.`)) return;
+                
+                let successCount = 0;
+                for (const id of selectedIds) {
+                    try {
+                        const response = await fetch(`${API_URL}/documents/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${currentToken}` }
+                        });
+                        const data = await response.json();
+                        if (data.sucesso) successCount++;
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+                
+                alert(`✅ ${successCount} ficheiro(s) duplicado(s) removido(s)!`);
+                duplicatesModal.style.display = 'none';
+                loadDocuments();
+            });
+        }
+
+        // ==================== RESTO DO CÓDIGO ====================
         filterFavBtn.addEventListener('click', () => {
             showFavoritesOnly = !showFavoritesOnly;
             if (showFavoritesOnly) {
@@ -1711,169 +1860,16 @@ async function processQueue() {
                 } else { showPasswordMessage(data.erro || 'Erro ao alterar password', 'error'); }
             } catch (error) { console.error(error); showPasswordMessage('Erro de conexão', 'error'); }
         });
-// Aviso ao tentar sair com uploads em andamento
-  window.addEventListener('beforeunload', (e) => {
-    if (uploadsInProgress) {
-        e.preventDefault();
-        e.returnValue = '⚠️ Existem uploads em andamento. Se sair agora, os ficheiros não terminados serão perdidos. Tem certeza?';
-        return e.returnValue;
-    }
-});
-// ==================== DETETAR DUPLICADOS ====================
-const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
-const duplicatesModal = document.getElementById('duplicatesModal');
-const closeDuplicatesModal = document.getElementById('closeDuplicatesModal');
-const duplicatesList = document.getElementById('duplicatesList');
-const duplicatesActions = document.getElementById('duplicatesActions');
 
-function findDuplicates() {
-    const seen = new Map();
-    const duplicates = [];
-    
-    allDocuments.forEach(doc => {
-        const key = `${doc.original_name}|${doc.file_size}`;
-        if (seen.has(key)) {
-            const group = seen.get(key);
-            group.push(doc);
-        } else {
-            seen.set(key, [doc]);
-        }
-    });
-    
-    // Filtrar grupos com mais de 1 documento
-    for (const [key, group] of seen) {
-        if (group.length > 1) {
-            const [name, size] = key.split('|');
-            duplicates.push({ name, size: parseInt(size), docs: group });
-        }
-    }
-    
-    return duplicates;
-}
-
-function renderDuplicatesModal() {
-    const duplicates = findDuplicates();
-    
-    if (duplicates.length === 0) {
-        duplicatesList.innerHTML = '<div style="text-align: center; padding: 40px;">📭 Nenhum ficheiro duplicado encontrado.</div>';
-        duplicatesActions.style.display = 'none';
-        return;
-    }
-    
-    let html = '';
-    let allCheckboxes = [];
-    
-    duplicates.forEach((group, groupIdx) => {
-        html += `
-            <div class="duplicate-group">
-                <div class="duplicate-header">
-                    📄 ${escapeHtml(group.name)} (${(group.size / 1024).toFixed(1)} KB) - ${group.docs.length} cópias
-                </div>
-        `;
-        
-        group.docs.forEach((doc, docIdx) => {
-            const isFirst = docIdx === 0;
-            html += `
-                <div class="duplicate-item">
-                    <input type="checkbox" class="duplicate-checkbox" data-id="${doc.id}" data-group="${groupIdx}" ${isFirst ? 'disabled checked' : ''}>
-                    <span class="duplicate-name">${escapeHtml(doc.original_name)}</span>
-                    <span class="duplicate-meta">${formatDate(doc.uploaded_at)}</span>
-                    ${isFirst ? '<span class="duplicate-keep">✓ Manter (primeiro)</span>' : '<span style="font-size: 11px; color: #999;">⬅️ Duplicado</span>'}
-                </div>
-            `;
+        window.addEventListener('beforeunload', (e) => {
+            if (uploadsInProgress) {
+                e.preventDefault();
+                e.returnValue = '⚠️ Existem uploads em andamento. Se sair agora, os ficheiros não terminados serão perdidos. Tem certeza?';
+                return e.returnValue;
+            }
         });
-        
-        html += `</div>`;
-    });
-    
-    duplicatesList.innerHTML = html;
-    duplicatesActions.style.display = 'block';
-    
-    // Adicionar evento de seleção em massa
-    const allCheckboxElements = document.querySelectorAll('.duplicate-checkbox:not([disabled])');
-    const selectAllContainer = document.createElement('div');
-    selectAllContainer.style.marginBottom = '15px';
-    selectAllContainer.style.display = 'flex';
-    selectAllContainer.style.alignItems = 'center';
-    selectAllContainer.style.gap = '10px';
-    selectAllContainer.innerHTML = `
-        <input type="checkbox" id="selectAllDuplicates">
-        <label for="selectAllDuplicates">Selecionar todos os duplicados (manter apenas o primeiro de cada grupo)</label>
-    `;
-    duplicatesList.insertBefore(selectAllContainer, duplicatesList.firstChild);
-    
-    const selectAllCheckbox = document.getElementById('selectAllDuplicates');
-    selectAllCheckbox.addEventListener('change', (e) => {
-        document.querySelectorAll('.duplicate-checkbox:not([disabled])').forEach(cb => {
-            cb.checked = e.target.checked;
-        });
-    });
-}
 
-showDuplicatesBtn.addEventListener('click', () => {
-    renderDuplicatesModal();
-    duplicatesModal.style.display = 'flex';
-});
-
-closeDuplicatesModal.addEventListener('click', () => {
-    duplicatesModal.style.display = 'none';
-});
-
-window.addEventListener('click', (e) => {
-    if (e.target === duplicatesModal) {
-        duplicatesModal.style.display = 'none';
-    }
-});
-
-// Remover duplicados selecionados
-document.getElementById('deleteSelectedDuplicatesBtn').addEventListener('click', async () => {
-    const selectedIds = [];
-    document.querySelectorAll('.duplicate-checkbox:checked:not([disabled])').forEach(cb => {
-        selectedIds.push(parseInt(cb.dataset.id));
-    });
-    
-    if (selectedIds.length === 0) {
-        alert('Nenhum duplicado selecionado para remover.');
-        return;
-    }
-    
-    if (!confirm(`⚠️ Tem certeza que deseja remover ${selectedIds.length} ficheiro(s) duplicado(s)? Esta ação não pode ser desfeita.`)) return;
-    
-    let successCount = 0;
-    for (const id of selectedIds) {
-        try {
-            const response = await fetch(`${API_URL}/documents/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${currentToken}` }
-            });
-            const data = await response.json();
-            if (data.sucesso) successCount++;
-        } catch (error) {
-            console.error(error);
-        }
-    }
-    
-    alert(`✅ ${successCount} ficheiro(s) duplicado(s) removido(s)!`);
-    duplicatesModal.style.display = 'none';
-    loadDocuments();
-});
-        <!-- Modal para duplicados -->
-<div id="duplicatesModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 600px; height: auto; border-radius: 16px;">
-        <div class="modal-header">
-            <h3>🔄 Ficheiros Duplicados</h3>
-            <button class="modal-close" id="closeDuplicatesModal">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 20px; max-height: 500px; overflow-y: auto;">
-            <div id="duplicatesList"></div>
-            <div id="duplicatesActions" style="margin-top: 20px; display: none;">
-                <button id="deleteSelectedDuplicatesBtn" class="bulk-delete" style="width: 100%;">🗑️ Remover Selecionados</button>
-            </div>
-        </div>
-    </div>
-</div>
         loadDocuments();
     </script>
-
 </body>
 </html>
