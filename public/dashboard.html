@@ -1856,9 +1856,7 @@ document.getElementById('deleteSelectedDuplicatesBtn').addEventListener('click',
     duplicatesModal.style.display = 'none';
     loadDocuments();
 });
-        loadDocuments();
-    </script>
-<!-- Modal para duplicados -->
+        <!-- Modal para duplicados -->
 <div id="duplicatesModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 600px; height: auto; border-radius: 16px;">
         <div class="modal-header">
@@ -1873,5 +1871,8 @@ document.getElementById('deleteSelectedDuplicatesBtn').addEventListener('click',
         </div>
     </div>
 </div>
+        loadDocuments();
+    </script>
+
 </body>
 </html>
