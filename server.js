@@ -1,16 +1,27 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
-const crypto = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
-const PORT = 3000;
-const SECRET_KEY = 'documentos_secret_key_2024';
+const PORT = process.env.PORT || 3000;
+const SECRET_KEY = process.env.SECRET_KEY || 'documentos_secret_key_2024';
+
+// ============================================
+// CONFIGURAÇÃO SUPABASE
+// ============================================
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Erro: SUPABASE_URL e SUPABASE_KEY são obrigatórios!');
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors());
@@ -18,85 +29,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Criar pasta de uploads se não existir
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-}
-
-// Configuração do multer para upload de ficheiros
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const userDir = path.join(uploadsDir, req.userId.toString());
-        if (!fs.existsSync(userDir)) {
-            fs.mkdirSync(userDir);
-        }
-        cb(null, userDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, uniqueSuffix + ext);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 100 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-        const ext = path.extname(file.originalname).toLowerCase();
-        if (allowedTypes.includes(ext)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Tipo de ficheiro não permitido. Apenas PDF, Word e PowerPoint.'));
-        }
-    }
-});
-
-// Base de dados SQLite
-const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'));
-
-// Criar tabelas
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-
-    db.run(`
-        CREATE TABLE IF NOT EXISTS documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            filename TEXT NOT NULL,
-            original_name TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            file_type TEXT NOT NULL,
-            file_size INTEGER NOT NULL,
-            tags TEXT DEFAULT '[]',
-            favorite INTEGER DEFAULT 0,
-            uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    `);
-
-    db.run(`
-        CREATE TABLE IF NOT EXISTS share_links (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            document_id INTEGER NOT NULL,
-            token TEXT UNIQUE NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
-        )
-    `);
-});
-
-// Função para corrigir codificação de nomes de ficheiro
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
 function fixEncoding(str) {
     if (!str) return str;
     try {
@@ -106,8 +41,8 @@ function fixEncoding(str) {
     }
 }
 
-// Middleware de autenticação (aceita token do header OU da URL)
-const authenticate = (req, res, next) => {
+// Middleware de autenticação
+const authenticate = async (req, res, next) => {
     let token = req.headers.authorization?.split(' ')[1];
     
     if (!token && req.query.token) {
@@ -128,7 +63,9 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// ==================== ROTAS DE AUTENTICAÇÃO ====================
+// ============================================
+// ROTAS DE AUTENTICAÇÃO
+// ============================================
 
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
@@ -140,31 +77,44 @@ app.post('/api/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        db.run('INSERT INTO users (email, password) VALUES (?, ?)', [email, hashedPassword], function(err) {
-            if (err) {
-                if (err.message.includes('UNIQUE')) {
-                    return res.status(400).json({ erro: 'Email já registado' });
-                }
-                return res.status(500).json({ erro: 'Erro ao registar' });
+        // Inserir no Supabase
+        const { data, error } = await supabase
+            .from('usuarios')
+            .insert([{ email, password: hashedPassword }])
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') { // unique violation
+                return res.status(400).json({ erro: 'Email já registado' });
             }
-            
-            const token = jwt.sign({ userId: this.lastID, email }, SECRET_KEY, { expiresIn: '7d' });
-            res.json({ sucesso: true, token, userId: this.lastID, email });
-        });
+            console.error('Erro Supabase:', error);
+            return res.status(500).json({ erro: 'Erro ao registar' });
+        }
+        
+        const token = jwt.sign({ userId: data.id, email }, SECRET_KEY, { expiresIn: '7d' });
+        res.json({ sucesso: true, token, userId: data.id, email });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ erro: 'Erro ao registar' });
     }
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ erro: 'Email e password são obrigatórios' });
     }
 
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
-        if (err || !user) {
+    try {
+        const { data: user, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
             return res.status(401).json({ erro: 'Credenciais inválidas' });
         }
 
@@ -175,130 +125,194 @@ app.post('/api/login', (req, res) => {
 
         const token = jwt.sign({ userId: user.id, email: user.email }, SECRET_KEY, { expiresIn: '7d' });
         res.json({ sucesso: true, token, userId: user.id, email: user.email });
-    });
-});
-
-// ==================== ROTAS DE DOCUMENTOS ====================
-
-// 1. APAGAR TODOS (DEVE VIR PRIMEIRO)
-app.delete('/api/documents/delete-all', authenticate, (req, res) => {
-    const userId = req.userId;
-    console.log(`🗑️ Apagar todos os documentos do utilizador: ${userId}`);
-    
-    db.all('SELECT id, file_path FROM documents WHERE user_id = ?', [userId], (err, docs) => {
-        if (err) {
-            console.error('Erro ao listar:', err);
-            return res.status(500).json({ erro: 'Erro ao listar documentos' });
-        }
-        if (docs.length === 0) {
-            return res.json({ sucesso: true, mensagem: 'Nenhum documento para apagar', count: 0 });
-        }
-        
-        docs.forEach(doc => {
-            if (doc.file_path && fs.existsSync(doc.file_path)) {
-                fs.unlink(doc.file_path, () => {});
-            }
-        });
-        
-        db.run('DELETE FROM documents WHERE user_id = ?', [userId], function(deleteErr) {
-            if (deleteErr) {
-                return res.status(500).json({ erro: 'Erro ao apagar documentos' });
-            }
-            res.json({ sucesso: true, mensagem: `${this.changes} documentos apagados`, count: this.changes });
-        });
-    });
-});
-
-// 2. Upload de documento
-app.post('/api/upload', authenticate, upload.single('documento'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ erro: 'Nenhum ficheiro enviado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao fazer login' });
     }
+});
 
-    const file = req.file;
-    let originalName = fixEncoding(file.originalname);
-    let tags = [];
-    
-    if (req.body.tags) {
+// ============================================
+// ROTAS DE DOCUMENTOS
+// ============================================
+
+// Upload de documento (usando Supabase Storage)
+app.post('/api/upload', authenticate, async (req, res) => {
+    const multer = require('multer');
+    const upload = multer({ 
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 100 * 1024 * 1024 },
+        fileFilter: (req, file, cb) => {
+            const allowedTypes = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+            const ext = path.extname(file.originalname).toLowerCase();
+            if (allowedTypes.includes(ext)) {
+                cb(null, true);
+            } else {
+                cb(new Error('Tipo de ficheiro não permitido. Apenas PDF, Word e PowerPoint.'));
+            }
+        }
+    }).single('documento');
+
+    upload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ erro: err.message });
+        }
+        
+        if (!req.file) {
+            return res.status(400).json({ erro: 'Nenhum ficheiro enviado' });
+        }
+
+        const file = req.file;
+        let originalName = fixEncoding(file.originalname);
+        let tags = [];
+        
+        if (req.body.tags) {
+            try {
+                tags = JSON.parse(req.body.tags);
+            } catch (e) {
+                tags = [];
+            }
+        }
+        
+        const ext = path.extname(originalName).toLowerCase();
+        let fileType = 'outro';
+        if (ext === '.pdf') fileType = 'pdf';
+        else if (['.doc', '.docx'].includes(ext)) fileType = 'word';
+        else if (['.ppt', '.pptx'].includes(ext)) fileType = 'powerpoint';
+
+        // Gerar nome único para o arquivo no Storage
+        const uniqueFileName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+        const filePath = `user_${req.userId}/${uniqueFileName}`;
+
         try {
-            tags = JSON.parse(req.body.tags);
-        } catch (e) {
-            tags = [];
-        }
-    }
-    
-    const ext = path.extname(originalName).toLowerCase();
-    let fileType = 'outro';
-    if (ext === '.pdf') fileType = 'pdf';
-    else if (['.doc', '.docx'].includes(ext)) fileType = 'word';
-    else if (['.ppt', '.pptx'].includes(ext)) fileType = 'powerpoint';
+            // Upload para Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('documentos')
+                .upload(filePath, file.buffer, {
+                    contentType: file.mimetype,
+                    cacheControl: '3600'
+                });
 
-    db.run(`
-        INSERT INTO documents (user_id, filename, original_name, file_path, file_type, file_size, tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [req.userId, file.filename, originalName, file.path, fileType, file.size, JSON.stringify(tags)], function(err) {
-        if (err) {
-            console.error('Erro ao guardar documento:', err);
-            return res.status(500).json({ erro: 'Erro ao guardar documento' });
-        }
-        res.json({ 
-            sucesso: true, 
-            documento: {
-                id: this.lastID,
-                filename: file.filename,
-                original_name: originalName,
-                file_type: fileType,
-                file_size: file.size,
-                tags: tags,
-                uploaded_at: new Date().toISOString()
+            if (uploadError) {
+                console.error('Erro no upload:', uploadError);
+                return res.status(500).json({ erro: 'Erro ao fazer upload do ficheiro' });
             }
-        });
+
+            // Obter URL pública
+            const { data: urlData } = supabase.storage
+                .from('documentos')
+                .getPublicUrl(filePath);
+
+            const fileUrl = urlData.publicUrl;
+
+            // Salvar no banco de dados
+            const { data: docData, error: dbError } = await supabase
+                .from('documentos')
+                .insert([{
+                    user_id: req.userId,
+                    filename: uniqueFileName,
+                    original_name: originalName,
+                    file_url: fileUrl,
+                    file_type: fileType,
+                    file_size: file.size,
+                    tags: JSON.stringify(tags)
+                }])
+                .select()
+                .single();
+
+            if (dbError) {
+                console.error('Erro no banco:', dbError);
+                // Tentar deletar o arquivo do storage se falhar no banco
+                await supabase.storage.from('documentos').remove([filePath]);
+                return res.status(500).json({ erro: 'Erro ao guardar documento' });
+            }
+
+            res.json({ 
+                sucesso: true, 
+                documento: {
+                    id: docData.id,
+                    filename: uniqueFileName,
+                    original_name: originalName,
+                    file_type: fileType,
+                    file_size: file.size,
+                    tags: tags,
+                    uploaded_at: new Date().toISOString()
+                }
+            });
+        } catch (error) {
+            console.error('Erro geral:', error);
+            res.status(500).json({ erro: 'Erro ao processar upload' });
+        }
     });
 });
 
-// 3. Listar documentos
-app.get('/api/documents', authenticate, (req, res) => {
-    db.all('SELECT * FROM documents WHERE user_id = ? ORDER BY uploaded_at DESC', [req.userId], (err, rows) => {
-        if (err) {
-            console.error('Erro ao listar documentos:', err);
-            return res.status(500).json({ erro: 'Erro ao listar documentos' });
-        }
-        const documentos = rows.map(doc => ({
+// Listar documentos
+app.get('/api/documents', authenticate, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('documentos')
+            .select('*')
+            .eq('user_id', req.userId)
+            .order('uploaded_at', { ascending: false });
+
+        if (error) throw error;
+
+        const documentos = data.map(doc => ({
             ...doc,
             original_name: fixEncoding(doc.original_name),
             tags: doc.tags ? JSON.parse(doc.tags) : [],
             favorite: doc.favorite || 0
         }));
+        
         res.json({ documentos });
-    });
+    } catch (error) {
+        console.error('Erro ao listar documentos:', error);
+        res.status(500).json({ erro: 'Erro ao listar documentos' });
+    }
 });
 
-// 4. Download documento
-app.get('/api/download/:id', authenticate, (req, res) => {
+// Download documento
+app.get('/api/download/:id', authenticate, async (req, res) => {
     const docId = req.params.id;
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) {
+    try {
+        const { data: doc, error } = await supabase
+            .from('documentos')
+            .select('*')
+            .eq('id', docId)
+            .eq('user_id', req.userId)
+            .single();
+
+        if (error || !doc) {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
-        
+
+        // Redirecionar para URL pública ou fazer stream
         const originalName = fixEncoding(doc.original_name);
-        res.download(doc.file_path, originalName);
-    });
+        res.redirect(doc.file_url);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao fazer download' });
+    }
 });
 
-// 5. Visualizar documento
-app.get('/api/view/:id', authenticate, (req, res) => {
+// Visualizar documento
+app.get('/api/view/:id', authenticate, async (req, res) => {
     const docId = req.params.id;
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) {
+    try {
+        const { data: doc, error } = await supabase
+            .from('documentos')
+            .select('*')
+            .eq('id', docId)
+            .eq('user_id', req.userId)
+            .single();
+
+        if (error || !doc) {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
-        
-        const filePath = path.resolve(doc.file_path);
+
+        // Redirecionar para URL pública para visualização
         const ext = path.extname(doc.original_name).toLowerCase();
-        
         let contentType = 'application/octet-stream';
         if (ext === '.pdf') contentType = 'application/pdf';
         else if (ext === '.doc') contentType = 'application/msword';
@@ -307,94 +321,172 @@ app.get('/api/view/:id', authenticate, (req, res) => {
         else if (ext === '.pptx') contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
         
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.original_name)}"`);
-        res.setHeader('Cache-Control', 'no-cache');
-        
-        res.sendFile(filePath);
-    });
+        res.redirect(doc.file_url);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao visualizar documento' });
+    }
 });
 
-// 6. Apagar um documento (DEVE VIR DEPOIS DO delete-all)
-app.delete('/api/documents/:id', authenticate, (req, res) => {
+// Apagar todos os documentos
+app.delete('/api/documents/delete-all', authenticate, async (req, res) => {
+    const userId = req.userId;
+    
+    try {
+        const { data: docs, error: listError } = await supabase
+            .from('documentos')
+            .select('id, filename')
+            .eq('user_id', userId);
+
+        if (listError) throw listError;
+
+        if (docs.length === 0) {
+            return res.json({ sucesso: true, mensagem: 'Nenhum documento para apagar', count: 0 });
+        }
+
+        // Apagar arquivos do Storage
+        const filesToDelete = docs.map(doc => `user_${userId}/${doc.filename}`);
+        await supabase.storage.from('documentos').remove(filesToDelete);
+
+        // Apagar registros do banco
+        const { error: deleteError } = await supabase
+            .from('documentos')
+            .delete()
+            .eq('user_id', userId);
+
+        if (deleteError) throw deleteError;
+
+        res.json({ sucesso: true, mensagem: `${docs.length} documentos apagados`, count: docs.length });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao apagar documentos' });
+    }
+});
+
+// Apagar um documento
+app.delete('/api/documents/:id', authenticate, async (req, res) => {
     const docId = req.params.id;
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) {
+    try {
+        const { data: doc, error: findError } = await supabase
+            .from('documentos')
+            .select('filename')
+            .eq('id', docId)
+            .eq('user_id', req.userId)
+            .single();
+
+        if (findError || !doc) {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
-        
-        fs.unlink(doc.file_path, (unlinkErr) => {
-            if (unlinkErr) console.error('Erro ao apagar ficheiro:', unlinkErr);
-        });
-        
-        db.run('DELETE FROM documents WHERE id = ?', [docId], (deleteErr) => {
-            if (deleteErr) {
-                return res.status(500).json({ erro: 'Erro ao apagar documento' });
-            }
-            res.json({ sucesso: true, mensagem: 'Documento apagado' });
-        });
-    });
+
+        // Apagar do Storage
+        const filePath = `user_${req.userId}/${doc.filename}`;
+        await supabase.storage.from('documentos').remove([filePath]);
+
+        // Apagar do banco
+        const { error: deleteError } = await supabase
+            .from('documentos')
+            .delete()
+            .eq('id', docId);
+
+        if (deleteError) throw deleteError;
+
+        res.json({ sucesso: true, mensagem: 'Documento apagado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao apagar documento' });
+    }
 });
 
-// 7. Renomear documento
-app.put('/api/documents/:id/rename', authenticate, (req, res) => {
+// Renomear documento
+app.put('/api/documents/:id/rename', authenticate, async (req, res) => {
     const docId = req.params.id;
     const { newName } = req.body;
     
     if (!newName) return res.status(400).json({ erro: 'Nome não fornecido' });
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) return res.status(404).json({ erro: 'Documento não encontrado' });
-        
-        const ext = path.extname(doc.original_name);
-        let newFileName = newName;
-        if (!newName.toLowerCase().endsWith(ext.toLowerCase())) {
-            newFileName = newName + ext;
+    try {
+        const { data: doc, error: findError } = await supabase
+            .from('documentos')
+            .select('original_name')
+            .eq('id', docId)
+            .eq('user_id', req.userId)
+            .single();
+
+        if (findError || !doc) {
+            return res.status(404).json({ erro: 'Documento não encontrado' });
         }
         
-        db.run('UPDATE documents SET original_name = ? WHERE id = ?', [newFileName, docId], function(updateErr) {
-            if (updateErr) return res.status(500).json({ erro: 'Erro ao renomear' });
-            res.json({ sucesso: true, mensagem: 'Documento renomeado' });
-        });
-    });
+        const { error: updateError } = await supabase
+            .from('documentos')
+            .update({ original_name: newName })
+            .eq('id', docId);
+
+        if (updateError) throw updateError;
+
+        res.json({ sucesso: true, mensagem: 'Documento renomeado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao renomear' });
+    }
 });
 
-// 8. Atualizar tags
-app.put('/api/documents/:id/tags', authenticate, (req, res) => {
+// Atualizar tags
+app.put('/api/documents/:id/tags', authenticate, async (req, res) => {
     const docId = req.params.id;
     const { tags } = req.body;
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) return res.status(404).json({ erro: 'Documento não encontrado' });
-        
-        db.run('UPDATE documents SET tags = ? WHERE id = ?', [JSON.stringify(tags || []), docId], function(updateErr) {
-            if (updateErr) return res.status(500).json({ erro: 'Erro ao atualizar tags' });
-            res.json({ sucesso: true, mensagem: 'Tags atualizadas' });
-        });
-    });
+    try {
+        const { error } = await supabase
+            .from('documentos')
+            .update({ tags: JSON.stringify(tags || []) })
+            .eq('id', docId)
+            .eq('user_id', req.userId);
+
+        if (error) throw error;
+
+        res.json({ sucesso: true, mensagem: 'Tags atualizadas' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao atualizar tags' });
+    }
 });
 
-// 9. Marcar/desmarcar favorito
-app.put('/api/documents/:id/favorite', authenticate, (req, res) => {
+// Marcar/desmarcar favorito
+app.put('/api/documents/:id/favorite', authenticate, async (req, res) => {
     const docId = req.params.id;
     const { favorite } = req.body;
     
-    db.run('UPDATE documents SET favorite = ? WHERE id = ? AND user_id = ?',
-        [favorite ? 1 : 0, docId, req.userId], function(err) {
-            if (err) return res.status(500).json({ erro: 'Erro ao atualizar favorito' });
-            res.json({ sucesso: true, mensagem: 'Favorito atualizado' });
-        });
+    try {
+        const { error } = await supabase
+            .from('documentos')
+            .update({ favorite: favorite ? 1 : 0 })
+            .eq('id', docId)
+            .eq('user_id', req.userId);
+
+        if (error) throw error;
+
+        res.json({ sucesso: true, mensagem: 'Favorito atualizado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao atualizar favorito' });
+    }
 });
 
-// ==================== ROTAS DE PARTILHA ====================
-
 // Gerar link de partilha
-app.post('/api/documents/:id/share', authenticate, (req, res) => {
+app.post('/api/documents/:id/share', authenticate, async (req, res) => {
     const docId = req.params.id;
     const { expires_days = 7 } = req.body;
     
-    db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.userId], (err, doc) => {
-        if (err || !doc) {
+    try {
+        const { data: doc, error: findError } = await supabase
+            .from('documentos')
+            .select('id')
+            .eq('id', docId)
+            .eq('user_id', req.userId)
+            .single();
+
+        if (findError || !doc) {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
         
@@ -402,27 +494,45 @@ app.post('/api/documents/:id/share', authenticate, (req, res) => {
         const expires_at = new Date();
         expires_at.setDate(expires_at.getDate() + expires_days);
         
-        db.run('INSERT INTO share_links (document_id, token, expires_at) VALUES (?, ?, ?)',
-            [docId, token, expires_at.toISOString()], function(err) {
-                if (err) {
-                    return res.status(500).json({ erro: 'Erro ao gerar link' });
-                }
-                const shareUrl = `${req.protocol}://${req.get('host')}/share/${token}`;
-                res.json({ sucesso: true, url: shareUrl, token, expires_at });
-            });
-    });
+        const { data, error } = await supabase
+            .from('share_links')
+            .insert([{
+                document_id: docId,
+                token: token,
+                expires_at: expires_at.toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const shareUrl = `${req.protocol}://${req.get('host')}/share/${token}`;
+        res.json({ sucesso: true, url: shareUrl, token, expires_at });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao gerar link' });
+    }
 });
 
-// Rota pública para aceder ao documento partilhado
-app.get('/share/:token', (req, res) => {
+// Rota pública para documento partilhado
+app.get('/share/:token', async (req, res) => {
     const token = req.params.token;
     
-    db.get(`
-        SELECT d.*, s.expires_at FROM share_links s
-        JOIN documents d ON s.document_id = d.id
-        WHERE s.token = ? AND s.expires_at > datetime('now')
-    `, [token], (err, doc) => {
-        if (err || !doc) {
+    try {
+        const { data, error } = await supabase
+            .from('share_links')
+            .select(`
+                expires_at,
+                documentos (
+                    id,
+                    original_name,
+                    file_url
+                )
+            `)
+            .eq('token', token)
+            .single();
+
+        if (error || !data || new Date(data.expires_at) < new Date()) {
             return res.status(404).send(`
                 <!DOCTYPE html>
                 <html>
@@ -445,42 +555,52 @@ app.get('/share/:token', (req, res) => {
                 </html>
             `);
         }
-        
-        const filePath = path.resolve(doc.file_path);
-        const ext = path.extname(doc.original_name).toLowerCase();
-        
-        let contentType = 'application/octet-stream';
-        if (ext === '.pdf') contentType = 'application/pdf';
-        else if (ext === '.doc') contentType = 'application/msword';
-        else if (ext === '.docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        else if (ext === '.ppt') contentType = 'application/vnd.ms-powerpoint';
-        else if (ext === '.pptx') contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-        
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.original_name)}"`);
-        res.setHeader('Cache-Control', 'no-cache');
-        res.sendFile(filePath);
-    });
+
+        const doc = data.documentos;
+        res.redirect(doc.file_url);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Erro ao aceder ao documento');
+    }
 });
 
-// Listar links partilhados de um documento
-app.get('/api/documents/:id/shares', authenticate, (req, res) => {
+// Listar links partilhados
+app.get('/api/documents/:id/shares', authenticate, async (req, res) => {
     const docId = req.params.id;
     
-    db.all('SELECT * FROM share_links WHERE document_id = ? ORDER BY created_at DESC', [docId], (err, rows) => {
-        if (err) return res.status(500).json({ erro: 'Erro ao listar links' });
-        res.json({ links: rows });
-    });
+    try {
+        const { data, error } = await supabase
+            .from('share_links')
+            .select('*')
+            .eq('document_id', docId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ links: data });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao listar links' });
+    }
 });
 
 // Revogar link de partilha
-app.delete('/api/share/:token', authenticate, (req, res) => {
+app.delete('/api/share/:token', authenticate, async (req, res) => {
     const token = req.params.token;
     
-    db.run('DELETE FROM share_links WHERE token = ?', [token], function(err) {
-        if (err) return res.status(500).json({ erro: 'Erro ao revogar link' });
+    try {
+        const { error } = await supabase
+            .from('share_links')
+            .delete()
+            .eq('token', token);
+
+        if (error) throw error;
+
         res.json({ sucesso: true, mensagem: 'Link revogado' });
-    });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao revogar link' });
+    }
 });
 
 // Alterar password
@@ -496,66 +616,82 @@ app.put('/api/user/change-password', authenticate, async (req, res) => {
         return res.status(400).json({ erro: 'A nova password deve ter pelo menos 6 caracteres' });
     }
 
-    db.get('SELECT * FROM users WHERE id = ?', [userId], async (err, user) => {
-        if (err || !user) {
+    try {
+        const { data: user, error } = await supabase
+            .from('usuarios')
+            .select('password')
+            .eq('id', userId)
+            .single();
+
+        if (error || !user) {
             return res.status(404).json({ erro: 'Utilizador não encontrado' });
         }
 
-        // Verificar password atual
         const valid = await bcrypt.compare(currentPassword, user.password);
         if (!valid) {
             return res.status(401).json({ erro: 'Password atual incorreta' });
         }
 
-        // Hash da nova password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId], function(updateErr) {
-            if (updateErr) {
-                return res.status(500).json({ erro: 'Erro ao alterar password' });
-            }
-            res.json({ sucesso: true, mensagem: 'Password alterada com sucesso' });
-        });
-    });
+        const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({ password: hashedPassword })
+            .eq('id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({ sucesso: true, mensagem: 'Password alterada com sucesso' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao alterar password' });
+    }
 });
 
-// Apagar conta do utilizador
-app.delete('/api/user/delete', authenticate, (req, res) => {
+// Apagar conta
+app.delete('/api/user/delete', authenticate, async (req, res) => {
     const userId = req.userId;
     
-    db.all('SELECT file_path FROM documents WHERE user_id = ?', [userId], (err, docs) => {
-        if (err) {
-            console.error('Erro ao listar documentos:', err);
-            return res.status(500).json({ erro: 'Erro ao listar documentos' });
+    try {
+        // Buscar documentos do usuário
+        const { data: docs, error: listError } = await supabase
+            .from('documentos')
+            .select('filename')
+            .eq('user_id', userId);
+
+        if (listError) throw listError;
+
+        // Apagar arquivos do Storage
+        if (docs && docs.length > 0) {
+            const filesToDelete = docs.map(doc => `user_${userId}/${doc.filename}`);
+            await supabase.storage.from('documentos').remove(filesToDelete);
         }
+
+        // Apagar a pasta do usuário no storage (opcional)
+        await supabase.storage.from('documentos').remove([`user_${userId}`]);
+
+        // Apagar documentos e links (cascade)
+        await supabase.from('documentos').delete().eq('user_id', userId);
         
-        docs.forEach(doc => {
-            if (doc.file_path && fs.existsSync(doc.file_path)) {
-                fs.unlink(doc.file_path, () => {});
-            }
-        });
-        
-        const userDir = path.join(uploadsDir, userId.toString());
-        if (fs.existsSync(userDir)) {
-            fs.rm(userDir, { recursive: true, force: true }, (rmErr) => {
-                if (rmErr) console.error('Erro ao apagar pasta:', rmErr);
-            });
-        }
-        
-        db.run('DELETE FROM documents WHERE user_id = ?', [userId], (docErr) => {
-            if (docErr) console.error('Erro ao apagar documentos:', docErr);
-            
-            db.run('DELETE FROM users WHERE id = ?', [userId], function(userErr) {
-                if (userErr) {
-                    console.error('Erro ao apagar utilizador:', userErr);
-                    return res.status(500).json({ erro: 'Erro ao apagar conta' });
-                }
-                res.json({ sucesso: true, mensagem: 'Conta apagada com sucesso' });
-            });
-        });
-    });
+        // Apagar usuário
+        const { error: deleteError } = await supabase
+            .from('usuarios')
+            .delete()
+            .eq('id', userId);
+
+        if (deleteError) throw deleteError;
+
+        res.json({ sucesso: true, mensagem: 'Conta apagada com sucesso' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: 'Erro ao apagar conta' });
+    }
 });
 
+// ============================================
+// INICIAR SERVIDOR
+// ============================================
 app.listen(PORT, () => {
     console.log(`📁 Sistema de Documentos rodando em http://localhost:${PORT}`);
+    console.log(`🗄️ Supabase conectado: ${supabaseUrl}`);
 });
