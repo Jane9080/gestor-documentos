@@ -712,11 +712,40 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
 // INICIAR SERVIDOR
 // ============================================
 
-// Rota de teste (colocar ANTES do app.listen)
+// Rota de teste
 app.get('/api/test', (req, res) => {
     res.json({ status: 'ok', message: 'Servidor funcionando!' });
 });
 
+// Rota de registro com mais detalhes de erro
+app.post('/api/register', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ erro: 'Email e password são obrigatórios' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const { data, error } = await supabase
+            .from('usuarios')
+            .insert([{ email, password: hashedPassword }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro Supabase:', error);
+            return res.status(400).json({ erro: error.message });
+        }
+        
+        const token = jwt.sign({ userId: data.id, email }, SECRET_KEY, { expiresIn: '7d' });
+        res.json({ sucesso: true, token, userId: data.id, email });
+    } catch (error) {
+        console.error('Erro geral:', error);
+        res.status(500).json({ erro: error.message });
+    }
+});
 app.listen(PORT, () => {
     console.log(`📁 Sistema de Documentos rodando em http://localhost:${PORT}`);
     console.log(`🗄️ Supabase conectado: ${supabaseUrl}`);
