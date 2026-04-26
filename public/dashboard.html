@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -985,6 +984,26 @@
         </div>
     </div>
 
+    <!-- Modal de compartilhar -->
+    <div id="shareModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; height: auto; border-radius: 16px;">
+            <div class="modal-header">
+                <h3>🔗 Link de partilha</h3>
+                <button class="modal-close" id="closeShareModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group">
+                    <label>Link do documento (válido até <span id="expiresDate"></span>)</label>
+                    <input type="text" id="shareLinkInput" readonly style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: #f5f5f5;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="copyShareLinkBtn" style="flex: 1; background: #2a5298; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">📋 Copiar link</button>
+                    <button id="closeShareModalBtn" style="flex: 1; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <p>📁 Meus Documentos • Guarde e organize os seus trabalhos</p>
         <p style="margin-top: 5px;">Desenvolvido por <span style="background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">⚡ Kent Fernandes</span></p>
@@ -1024,36 +1043,17 @@
         function detectFileType(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             
-            // Documentos
             if (ext === 'pdf') return 'pdf';
             if (['doc', 'docx'].includes(ext)) return 'word';
             if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
-            
-            // Código
             if (['c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat'].includes(ext)) return 'code';
-            
-            // Imagens
             if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext)) return 'image';
-            
-            // Áudio
             if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) return 'audio';
-            
-            // Vídeo
             if (['mp4', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv'].includes(ext)) return 'video';
-            
-            // Planilhas
             if (['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'spreadsheet';
-            
-            // Compactados
             if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return 'compressed';
-            
-            // E-books
             if (['epub', 'mobi', 'azw', 'azw3'].includes(ext)) return 'ebook';
-            
-            // Design
             if (['psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp'].includes(ext)) return 'design';
-            
-            // Texto
             if (['txt', 'md', 'rtf', 'odt'].includes(ext)) return 'text';
             
             return 'outro';
@@ -1062,19 +1062,9 @@
         // ==================== ÍCONES POR TIPO ====================
         function getFileIcon(fileType) {
             const icons = {
-                pdf: '📄',
-                word: '📝',
-                powerpoint: '📊',
-                image: '🖼️',
-                code: '💻',
-                audio: '🎵',
-                video: '🎬',
-                spreadsheet: '📊',
-                compressed: '📦',
-                ebook: '📚',
-                design: '🎨',
-                text: '📃',
-                outro: '📎'
+                pdf: '📄', word: '📝', powerpoint: '📊', image: '🖼️', code: '💻',
+                audio: '🎵', video: '🎬', spreadsheet: '📊', compressed: '📦',
+                ebook: '📚', design: '🎨', text: '📃', outro: '📎'
             };
             return icons[fileType] || '📎';
         }
@@ -1147,25 +1137,15 @@
             filterAndRenderDocuments();
         }
 
-        // Extensões permitidas (ATUALIZADO)
         const allowedExtensions = [
-            // Documentos
             '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.md', '.rtf', '.odt',
-            // Código
             '.c', '.cpp', '.h', '.hpp', '.py', '.js', '.ts', '.java', '.php', '.rb', '.go', '.rs', '.html', '.css', '.json', '.xml', '.sql', '.sh', '.bat',
-            // Imagens
             '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
-            // Áudio
             '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
-            // Vídeo
             '.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv',
-            // Planilhas
             '.xls', '.xlsx', '.ods', '.csv',
-            // Compactados
             '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
-            // E-books
             '.epub', '.mobi', '.azw', '.azw3',
-            // Design
             '.psd', '.ai', '.eps', '.cdr', '.dwg', '.dxf', '.skp'
         ];
 
@@ -1246,9 +1226,7 @@
                 if (tags.length > 0) {
                     tagsHint.innerHTML = `✅ Tags "${tags.join(', ')}" aplicadas a ${successCount} documento(s)!`;
                     tagsHint.className = 'tags-hint success';
-                    setTimeout(() => {
-                        tagsHint.innerHTML = '';
-                    }, 3000);
+                    setTimeout(() => { tagsHint.innerHTML = ''; }, 3000);
                 }
                 document.getElementById('uploadTags').value = '';
             } else if (successCount > 0 && errorCount > 0) {
@@ -1256,9 +1234,7 @@
                 if (errorDetails.length > 0) {
                     tagsHint.innerHTML = `❌ Falhas: ${errorDetails.slice(0, 3).join(', ')}${errorDetails.length > 3 ? '...' : ''}`;
                     tagsHint.className = 'tags-hint error';
-                    setTimeout(() => {
-                        tagsHint.innerHTML = '';
-                    }, 8000);
+                    setTimeout(() => { tagsHint.innerHTML = ''; }, 8000);
                 }
             } else {
                 let errorMsg = `❌ Nenhum documento enviado. `;
@@ -1272,21 +1248,14 @@
                 if (tags.length > 0) {
                     tagsHint.innerHTML = `⚠️ Nenhum documento enviado. As tags não foram aplicadas.`;
                     tagsHint.className = 'tags-hint error';
-                    setTimeout(() => {
-                        tagsHint.innerHTML = '';
-                    }, 5000);
+                    setTimeout(() => { tagsHint.innerHTML = ''; }, 5000);
                 }
             }
             uploadsInProgress = false;
         }
 
-        document.getElementById('processQueueBtn').addEventListener('click', () => {
-            processQueue();
-        });
-
-        document.getElementById('clearQueueBtn').addEventListener('click', () => {
-            clearQueue();
-        });
+        document.getElementById('processQueueBtn').addEventListener('click', () => { processQueue(); });
+        document.getElementById('clearQueueBtn').addEventListener('click', () => { clearQueue(); });
 
         // ==================== EVENTOS DE UPLOAD ====================
         const uploadArea = document.getElementById('uploadArea');
@@ -1342,7 +1311,7 @@
             }
         });
 
-        // ==================== FILTRO DE DUPLICADOS ====================
+        // ==================== FILTROS ====================
         filterDuplicateBtn.addEventListener('click', () => {
             showDuplicatesOnly = !showDuplicatesOnly;
             if (showDuplicatesOnly) {
@@ -1353,7 +1322,6 @@
             filterAndRenderDocuments();
         });
 
-        // ==================== RESTO DO CÓDIGO ====================
         filterFavBtn.addEventListener('click', () => {
             showFavoritesOnly = !showFavoritesOnly;
             if (showFavoritesOnly) {
@@ -1387,35 +1355,6 @@
             }
         };
 
-       // Substituir a função shareDocument antiga
-        window.shareDocument = async (id) => {
-            const days = prompt('🔗 Por quantos dias o link deve ser válido? (1-30)', '7');
-            if (!days) return;
-            const expires_days = parseInt(days);
-            if (expires_days < 1 || expires_days > 30) {
-                alert('Por favor, insira um valor entre 1 e 30 dias.');
-                return;
-            }
-            try {
-                const response = await fetch(`${API_URL}/documents/${id}/share`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ expires_days })
-                });
-                const data = await response.json();
-                if (data.sucesso) {
-                    const expiresDate = new Date(data.expires_at).toLocaleDateString('pt-PT');
-                    expiresDateSpan.textContent = expiresDate;
-                    shareLinkInput.value = data.url;
-                    shareModal.style.display = 'flex';
-                } else {
-                    alert(data.erro || 'Erro ao gerar link');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Erro de conexão');
-            }
-        };
         function sortDocuments(docs) {
             const sorted = [...docs];
             switch(currentSort) {
@@ -1468,9 +1407,7 @@
             }
             
             if (currentSearch) {
-                filtered = filtered.filter(doc => 
-                    doc.original_name.toLowerCase().includes(currentSearch)
-                );
+                filtered = filtered.filter(doc => doc.original_name.toLowerCase().includes(currentSearch));
             }
             
             if (showDuplicatesOnly) {
@@ -1667,7 +1604,6 @@
                 const data = await response.json();
                 if (data.documentos && data.documentos.length > 0) { 
                     allDocuments = data.documentos; 
-                    // Atualizar file_type dos documentos existentes usando a nova detecção
                     allDocuments = allDocuments.map(doc => ({
                         ...doc,
                         file_type: detectFileType(doc.original_name)
@@ -1770,6 +1706,7 @@
         };
 
         window.downloadDocument = (id) => { window.open(`${API_URL}/download/${id}?token=${currentToken}`, '_blank'); };
+        
         window.deleteDocument = async (id) => {
             if (!confirm('Tem certeza que deseja apagar este documento?')) return;
             try {
@@ -1782,6 +1719,65 @@
 
         closeModal.addEventListener('click', () => { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; });
         window.addEventListener('click', (e) => { if (e.target === viewModal) { viewModal.style.display = 'none'; viewerFrame.innerHTML = ''; } });
+
+        // ==================== MODAL DE COMPARTILHAR ====================
+        const shareModalElem = document.getElementById('shareModal');
+        const shareLinkInputElem = document.getElementById('shareLinkInput');
+        const expiresDateSpanElem = document.getElementById('expiresDate');
+        const closeShareModalBtn1 = document.getElementById('closeShareModal');
+        const closeShareModalBtn2 = document.getElementById('closeShareModalBtn');
+        const copyShareLinkBtnElem = document.getElementById('copyShareLinkBtn');
+
+        if (closeShareModalBtn1) closeShareModalBtn1.onclick = () => shareModalElem.style.display = 'none';
+        if (closeShareModalBtn2) closeShareModalBtn2.onclick = () => shareModalElem.style.display = 'none';
+        window.onclick = (e) => { if (e.target === shareModalElem) shareModalElem.style.display = 'none'; };
+
+        if (copyShareLinkBtnElem) {
+            copyShareLinkBtnElem.onclick = async () => {
+                const link = shareLinkInputElem.value;
+                if (!link) return;
+                try {
+                    await navigator.clipboard.writeText(link);
+                    copyShareLinkBtnElem.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyShareLinkBtnElem.textContent = '📋 Copiar link'; }, 2000);
+                } catch (err) {
+                    shareLinkInputElem.select();
+                    document.execCommand('copy');
+                    copyShareLinkBtnElem.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyShareLinkBtnElem.textContent = '📋 Copiar link'; }, 2000);
+                }
+            };
+        }
+
+        // Função de partilha
+        window.shareDocument = async (id) => {
+            const days = prompt('🔗 Por quantos dias o link deve ser válido? (1-30)', '7');
+            if (!days) return;
+            const expires_days = parseInt(days);
+            if (expires_days < 1 || expires_days > 30) {
+                alert('Por favor, insira um valor entre 1 e 30 dias.');
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/documents/${id}/share`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expires_days })
+                });
+                const data = await response.json();
+                if (data.sucesso) {
+                    const expiresDate = new Date(data.expires_at).toLocaleDateString('pt-PT');
+                    expiresDateSpanElem.textContent = expiresDate;
+                    shareLinkInputElem.value = data.url;
+                    shareModalElem.style.display = 'flex';
+                } else {
+                    alert(data.erro || 'Erro ao gerar link');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro de conexão');
+            }
+        };
 
         // ==================== ALTERAR PASSWORD ====================
         const changePasswordBtn = document.getElementById('changePasswordBtn');
@@ -1845,55 +1841,5 @@
 
         loadDocuments();
     </script>
-    <!-- Modal de compartilhar -->
-    <div id="shareModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; height: auto; border-radius: 16px;">
-            <div class="modal-header">
-                <h3>🔗 Link de partilha</h3>
-                <button class="modal-close" id="closeShareModal">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <div class="form-group">
-                    <label>Link do documento (válido até <span id="expiresDate"></span>)</label>
-                    <input type="text" id="shareLinkInput" readonly style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: #f5f5f5;">
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button id="copyShareLinkBtn" style="flex: 1; background: #2a5298; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">📋 Copiar link</button>
-                    <button id="closeShareModalBtn" style="flex: 1; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">Fechar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Modal de compartilhar - JavaScript
-        const shareModal = document.getElementById('shareModal');
-        const shareLinkInput = document.getElementById('shareLinkInput');
-        const expiresDateSpan = document.getElementById('expiresDate');
-        const closeShareModal = document.getElementById('closeShareModal');
-        const closeShareModalBtn = document.getElementById('closeShareModalBtn');
-        const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
-
-        if (closeShareModal) closeShareModal.onclick = () => shareModal.style.display = 'none';
-        if (closeShareModalBtn) closeShareModalBtn.onclick = () => shareModal.style.display = 'none';
-        window.onclick = (e) => { if (e.target === shareModal) shareModal.style.display = 'none'; };
-
-        if (copyShareLinkBtn) {
-            copyShareLinkBtn.onclick = async () => {
-                const link = shareLinkInput.value;
-                if (!link) return;
-                try {
-                    await navigator.clipboard.writeText(link);
-                    copyShareLinkBtn.textContent = '✅ Copiado!';
-                    setTimeout(() => { copyShareLinkBtn.textContent = '📋 Copiar link'; }, 2000);
-                } catch (err) {
-                    shareLinkInput.select();
-                    document.execCommand('copy');
-                    copyShareLinkBtn.textContent = '✅ Copiado!';
-                    setTimeout(() => { copyShareLinkBtn.textContent = '📋 Copiar link'; }, 2000);
-                }
-            };
-        }
-
 </body>
 </html>
