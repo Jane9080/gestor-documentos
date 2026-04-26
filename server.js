@@ -106,7 +106,6 @@ const authenticate = async (req, res, next) => {
 // ============================================
 // ROTAS DE AUTENTICAÇÃO
 // ============================================
-
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
 
@@ -124,18 +123,15 @@ app.post('/api/register', async (req, res) => {
             .single();
 
         if (error) {
-            if (error.code === '23505') {
-                return res.status(400).json({ erro: 'Email já registado' });
-            }
-            console.error('Erro Supabase:', error);
-            return res.status(500).json({ erro: 'Erro ao registar' });
+            console.error('Erro detalhado do Supabase:', error); // <-- LINHA ADICIONADA
+            return res.status(400).json({ erro: error.message }); // <--- Mostra erro exato
         }
         
         const token = jwt.sign({ userId: data.id, email }, SECRET_KEY, { expiresIn: '7d' });
         res.json({ sucesso: true, token, userId: data.id, email });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ erro: 'Erro ao registar' });
+        console.error('Erro geral:', error);
+        res.status(500).json({ erro: error.message }); // <--- Mostra erro exato
     }
 });
 
