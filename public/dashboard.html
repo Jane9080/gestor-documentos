@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -861,8 +862,8 @@
                 <p>Arraste e solte um ou mais ficheiros aqui</p>
                 <p>ou</p>
                 <button id="selectFileBtn" style="background: #2a5298; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Selecionar ficheiros</button>
-                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple>
-                <p><small>Formatos suportados: PDF, Word, PowerPoint (até 100MB por ficheiro)</small></p>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.java,.php,.rb,.go,.rs,.html,.css,.json,.xml,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.ico,.xls,.xlsx,.ods,.csv,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.ogg,.flac,.m4a,.mp4,.avi,.mkv,.mov,.webm,.epub,.mobi,.psd,.ai,.eps,.dwg,.dxf" multiple>
+                <p><small>Formatos suportados: Documentos, Código, Imagens, Planilhas, Compactados, Áudio, Vídeo, E-books e mais (até 100MB por ficheiro)</small></p>
             </div>
             <div class="upload-tags">
                 <input type="text" id="uploadTags" placeholder="🏷️ Tags (separadas por vírgula) ex: trabalho, importante, urgente">
@@ -891,6 +892,12 @@
                     <button class="filter-btn" data-filter="pdf">📄 PDF</button>
                     <button class="filter-btn" data-filter="word">📝 Word</button>
                     <button class="filter-btn" data-filter="powerpoint">📊 PowerPoint</button>
+                    <button class="filter-btn" data-filter="image">🖼️ Imagens</button>
+                    <button class="filter-btn" data-filter="code">💻 Código</button>
+                    <button class="filter-btn" data-filter="audio">🎵 Áudio</button>
+                    <button class="filter-btn" data-filter="video">🎬 Vídeo</button>
+                    <button class="filter-btn" data-filter="spreadsheet">📊 Planilhas</button>
+                    <button class="filter-btn" data-filter="compressed">📦 Compactados</button>
                 </div>
                 <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
                 <button id="filterDuplicateBtn" class="filter-duplicate-btn">🔄 Duplicados</button>
@@ -1013,6 +1020,65 @@
             window.location.href = '/login.html';
         });
 
+        // ==================== FUNÇÃO PARA DETECTAR TIPO DE ARQUIVO ====================
+        function detectFileType(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            
+            // Documentos
+            if (ext === 'pdf') return 'pdf';
+            if (['doc', 'docx'].includes(ext)) return 'word';
+            if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
+            
+            // Código
+            if (['c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat'].includes(ext)) return 'code';
+            
+            // Imagens
+            if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext)) return 'image';
+            
+            // Áudio
+            if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) return 'audio';
+            
+            // Vídeo
+            if (['mp4', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv'].includes(ext)) return 'video';
+            
+            // Planilhas
+            if (['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'spreadsheet';
+            
+            // Compactados
+            if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return 'compressed';
+            
+            // E-books
+            if (['epub', 'mobi', 'azw', 'azw3'].includes(ext)) return 'ebook';
+            
+            // Design
+            if (['psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp'].includes(ext)) return 'design';
+            
+            // Texto
+            if (['txt', 'md', 'rtf', 'odt'].includes(ext)) return 'text';
+            
+            return 'outro';
+        }
+
+        // ==================== ÍCONES POR TIPO ====================
+        function getFileIcon(fileType) {
+            const icons = {
+                pdf: '📄',
+                word: '📝',
+                powerpoint: '📊',
+                image: '🖼️',
+                code: '💻',
+                audio: '🎵',
+                video: '🎬',
+                spreadsheet: '📊',
+                compressed: '📦',
+                ebook: '📚',
+                design: '🎨',
+                text: '📃',
+                outro: '📎'
+            };
+            return icons[fileType] || '📎';
+        }
+
         // ==================== FUNÇÃO PARA OBTER IDs DOS DUPLICADOS ====================
         function getDuplicateIds() {
             const seen = new Map();
@@ -1021,10 +1087,8 @@
             allDocuments.forEach(doc => {
                 const key = `${doc.original_name}|${doc.file_size}`;
                 if (seen.has(key)) {
-                    // Já existe um documento com este nome+tamanho, este é duplicado
                     duplicateIds.add(doc.id);
                 } else {
-                    // É o primeiro (original)
                     seen.set(key, doc.id);
                 }
             });
@@ -1083,6 +1147,28 @@
             filterAndRenderDocuments();
         }
 
+        // Extensões permitidas (ATUALIZADO)
+        const allowedExtensions = [
+            // Documentos
+            '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.md', '.rtf', '.odt',
+            // Código
+            '.c', '.cpp', '.h', '.hpp', '.py', '.js', '.ts', '.java', '.php', '.rb', '.go', '.rs', '.html', '.css', '.json', '.xml', '.sql', '.sh', '.bat',
+            // Imagens
+            '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
+            // Áudio
+            '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
+            // Vídeo
+            '.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv',
+            // Planilhas
+            '.xls', '.xlsx', '.ods', '.csv',
+            // Compactados
+            '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
+            // E-books
+            '.epub', '.mobi', '.azw', '.azw3',
+            // Design
+            '.psd', '.ai', '.eps', '.cdr', '.dwg', '.dxf', '.skp'
+        ];
+
         async function processQueue() {
             if (pendingFiles.length === 0) return;
             
@@ -1110,10 +1196,9 @@
             
             for (let i = 0; i < filesToUpload.length; i++) {
                 const file = filesToUpload[i];
-                const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
                 const ext = '.' + file.name.split('.').pop().toLowerCase();
                 
-                if (!allowed.includes(ext)) {
+                if (!allowedExtensions.includes(ext)) {
                     errorCount++;
                     errorDetails.push(`"${file.name}" - formato não suportado (${ext})`);
                     showUploadStatus(`⚠️ Ficheiro ${i+1}/${total}: "${file.name}" - formato não suportado`, 'loading');
@@ -1482,37 +1567,42 @@
             updateTagFilter(allDocuments);
         }
 
-    function updateStats(docs) {
-    const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
-    const wordCount = docs.filter(d => d.file_type === 'word').length;
-    const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
-    const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint'].includes(d.file_type)).length;
-    const favCount = docs.filter(d => d.favorite === 1).length;
-    
-    // Calcular número de ficheiros duplicados (cópias, não os originais)
-    const seen = new Map();
-    let duplicatesCount = 0;
-    
-    docs.forEach(doc => {
-        const key = `${doc.original_name}|${doc.file_size}`;
-        if (seen.has(key)) {
-            // É duplicado (cópia)
-            duplicatesCount++;
-        } else {
-            seen.set(key, doc.id);
+        function updateStats(docs) {
+            const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
+            const wordCount = docs.filter(d => d.file_type === 'word').length;
+            const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
+            const imageCount = docs.filter(d => d.file_type === 'image').length;
+            const codeCount = docs.filter(d => d.file_type === 'code').length;
+            const audioCount = docs.filter(d => d.file_type === 'audio').length;
+            const videoCount = docs.filter(d => d.file_type === 'video').length;
+            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video'].includes(d.file_type)).length;
+            const favCount = docs.filter(d => d.favorite === 1).length;
+            
+            const seen = new Map();
+            let duplicatesCount = 0;
+            
+            docs.forEach(doc => {
+                const key = `${doc.original_name}|${doc.file_size}`;
+                if (seen.has(key)) {
+                    duplicatesCount++;
+                } else {
+                    seen.set(key, doc.id);
+                }
+            });
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
+                <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
+                <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
+                <div class="stat-item"><span class="stat-icon">🖼️</span> Imagens: ${imageCount}</div>
+                <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
+                <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
+                <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
+                <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
+                <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
+                <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+            `;
         }
-    });
-    
-    document.getElementById('stats').innerHTML = `
-        <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
-        <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
-        <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
-        <div class="stat-item"><span class="stat-icon">📎</span> Outros: ${outrosCount}</div>
-        <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
-        <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
-        <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
-    `;
-}
 
         function updateTagFilter(docs) {
             const allTags = new Set();
@@ -1583,7 +1673,15 @@
             try {
                 const response = await fetch(`${API_URL}/documents`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
                 const data = await response.json();
-                if (data.documentos && data.documentos.length > 0) { allDocuments = data.documentos; filterAndRenderDocuments(); }
+                if (data.documentos && data.documentos.length > 0) { 
+                    allDocuments = data.documentos; 
+                    // Atualizar file_type dos documentos existentes usando a nova detecção
+                    allDocuments = allDocuments.map(doc => ({
+                        ...doc,
+                        file_type: detectFileType(doc.original_name)
+                    }));
+                    filterAndRenderDocuments(); 
+                }
                 else { allDocuments = []; documentsList.innerHTML = '<div class="empty-state">📭 Nenhum documento. Faça upload do seu primeiro arquivo.</div>'; updateStats([]); updateTagFilter([]); }
             } catch (error) { console.error(error); documentsList.innerHTML = '<div class="empty-state">❌ Erro ao carregar documentos</div>'; }
         }
@@ -1596,7 +1694,6 @@
         }
 
         function renderDocuments(docs) {
-            const icons = { pdf: '📄', word: '📝', powerpoint: '📊', outro: '📎' };
             if (docs.length === 0) { documentsList.innerHTML = '<div class="empty-state">📭 Nenhum documento encontrado.</div>'; return; }
             if (currentView === 'grid') {
                 documentsList.innerHTML = `<div class="documents-grid">${docs.map(doc => `
@@ -1605,7 +1702,7 @@
                             <input type="checkbox" class="document-checkbox" data-id="${doc.id}" ${selectedDocuments.has(doc.id) ? 'checked' : ''}>
                             <div class="document-content">
                                 <div class="document-title-row">
-                                    <div class="document-icon">${icons[doc.file_type] || '📎'}</div>
+                                    <div class="document-icon">${getFileIcon(doc.file_type)}</div>
                                     <button class="favorite-star ${doc.favorite === 1 ? 'active' : ''}" onclick="toggleFavorite(${doc.id}, ${doc.favorite === 1})">★</button>
                                 </div>
                                 <div class="document-name">${escapeHtml(doc.original_name)}</div>
@@ -1632,7 +1729,7 @@
                         <div class="list-item">
                             <div class="list-col"><input type="checkbox" class="list-checkbox doc-checkbox" data-id="${doc.id}" ${selectedDocuments.has(doc.id) ? 'checked' : ''}></div>
                             <div class="list-col"><button class="list-fav-btn ${doc.favorite === 1 ? 'active' : ''}" onclick="toggleFavorite(${doc.id}, ${doc.favorite === 1})">★</button></div>
-                            <div class="list-col"><span class="list-icon">${icons[doc.file_type] || '📎'}</span><span class="list-name" title="${escapeHtml(doc.original_name)}">${escapeHtml(doc.original_name)}</span></div>
+                            <div class="list-col"><span class="list-icon">${getFileIcon(doc.file_type)}</span><span class="list-name" title="${escapeHtml(doc.original_name)}">${escapeHtml(doc.original_name)}</span></div>
                             <div class="list-col">${doc.file_type.toUpperCase()}</div>
                             <div class="list-col">${formatDate(doc.uploaded_at)}</div>
                             <div class="list-col">${formatSize(doc.file_size)}</div>
@@ -1664,8 +1761,19 @@
             const fileType = name.split('.').pop().toLowerCase();
             const url = `${API_URL}/view/${id}?token=${currentToken}`;
             viewerFrame.innerHTML = '';
-            if (fileType === 'pdf') viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
-            else viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+            if (fileType === 'pdf') {
+                viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(fileType)) {
+                viewerFrame.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto;">`;
+            } else if (['mp3', 'wav', 'ogg'].includes(fileType)) {
+                viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${url}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
+            } else if (['mp4', 'webm'].includes(fileType)) {
+                viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${url}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
+            } else if (fileType === 'txt' || fileType === 'md' || fileType === 'c' || fileType === 'cpp' || fileType === 'py' || fileType === 'js' || fileType === 'html' || fileType === 'css') {
+                viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+            } else {
+                viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+            }
             viewModal.style.display = 'flex';
         };
 
