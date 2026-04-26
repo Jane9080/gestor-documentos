@@ -435,10 +435,11 @@ app.delete('/api/documents/:id', authenticate, async (req, res) => {
 });
 
 // Apagar todos os documentos do utilizador
-app.delete('/api/documents', authenticate, async (req, res) => {
+app.delete('/api/documents/delete-all', authenticate, async (req, res) => {
     const userId = req.userId;
     
     try {
+        // Buscar documentos do usuário
         const { data: docs, error: listError } = await supabase
             .from('documentos')
             .select('id, filename')
@@ -450,13 +451,11 @@ app.delete('/api/documents', authenticate, async (req, res) => {
             return res.json({ sucesso: true, mensagem: 'Nenhum documento para apagar', count: 0 });
         }
 
-        // Deletar do storage
+        // Apagar arquivos do Storage
         const filesToDelete = docs.map(doc => `user_${userId}/${doc.filename}`);
-        if (filesToDelete.length > 0) {
-            await supabase.storage.from('documentos').remove(filesToDelete);
-        }
+        await supabase.storage.from('documentos').remove(filesToDelete);
 
-        // Deletar do banco de dados
+        // Apagar registros do banco
         const { error: deleteError } = await supabase
             .from('documentos')
             .delete()
@@ -464,13 +463,9 @@ app.delete('/api/documents', authenticate, async (req, res) => {
 
         if (deleteError) throw deleteError;
 
-        res.json({ 
-            sucesso: true, 
-            mensagem: `${docs.length} documento(s) apagado(s)`, 
-            count: docs.length 
-        });
+        res.json({ sucesso: true, mensagem: `${docs.length} documento(s) apagado(s) com sucesso!`, count: docs.length });
     } catch (error) {
-        console.error('Erro ao apagar documentos:', error);
+        console.error('Erro ao apagar todos os documentos:', error);
         res.status(500).json({ erro: 'Erro ao apagar documentos' });
     }
 });
