@@ -1580,22 +1580,47 @@
             } catch (error) { console.error(error); alert('Erro de conexão'); }
         });
 
-        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
-            const confirmacao = prompt('⚠️ Para apagar a sua conta, digite "APAGAR" no campo abaixo:');
-            if (confirmacao !== 'APAGAR') { alert('Operação cancelada.'); return; }
-            if (!confirm('Tem certeza absoluta? Todos os seus documentos serão apagados permanentemente.')) return;
-            try {
-                const response = await fetch(`${API_URL}/user/delete`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
-                const data = await response.json();
-                if (data.sucesso) {
-                    alert('✅ Conta apagada com sucesso.');
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userEmail');
-                    localStorage.removeItem('userId');
-                    window.location.href = '/login.html';
-                } else { alert(data.erro || 'Erro ao apagar conta'); }
-            } catch (error) { console.error(error); alert('Erro de conexão'); }
+       document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+    // Pedir a senha primeiro
+    const password = prompt('🔒 Para apagar a sua conta, digite a sua PASSWORD:');
+    if (!password) {
+        alert('Operação cancelada.');
+        return;
+    }
+    
+    // Depois confirmar
+    const confirmacao = prompt('⚠️ ATENÇÃO! Digite "APAGAR" para confirmar a exclusão permanente da sua conta:');
+    if (confirmacao !== 'APAGAR') { 
+        alert('Operação cancelada.'); 
+        return; 
+    }
+    
+    if (!confirm('Tem certeza absoluta? Todos os seus documentos serão apagados permanentemente.')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/user/delete`, { 
+            method: 'DELETE', 
+            headers: { 
+                'Authorization': `Bearer ${currentToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password: password })
         });
+        const data = await response.json();
+        if (data.sucesso) {
+            alert('✅ Conta apagada com sucesso.');
+            localStorage.removeItem('token');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userId');
+            window.location.href = '/login.html';
+        } else { 
+            alert(data.erro || 'Erro ao apagar conta'); 
+        }
+    } catch (error) { 
+        console.error(error); 
+        alert('Erro de conexão'); 
+    }
+});
 
         async function loadDocuments() {
             documentsList.innerHTML = '<div class="loading-state">⏳ Carregando documentos...</div>';
