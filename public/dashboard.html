@@ -1387,34 +1387,27 @@
             }
         };
 
+       // Substituir a função shareDocument antiga
         window.shareDocument = async (id) => {
             const days = prompt('🔗 Por quantos dias o link deve ser válido? (1-30)', '7');
             if (!days) return;
-            
             const expires_days = parseInt(days);
             if (expires_days < 1 || expires_days > 30) {
                 alert('Por favor, insira um valor entre 1 e 30 dias.');
                 return;
             }
-            
             try {
                 const response = await fetch(`${API_URL}/documents/${id}/share`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${currentToken}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ expires_days })
                 });
                 const data = await response.json();
                 if (data.sucesso) {
                     const expiresDate = new Date(data.expires_at).toLocaleDateString('pt-PT');
-                    try {
-                        await navigator.clipboard.writeText(data.url);
-                        alert(`✅ Link copiado!\n\n🔗 ${data.url}\n\nExpira em: ${expiresDate}`);
-                    } catch (err) {
-                        alert(`✅ Link gerado!\n\n🔗 ${data.url}\n\nExpira em: ${expiresDate}\n\nCopie manualmente (Ctrl+C).`);
-                    }
+                    expiresDateSpan.textContent = expiresDate;
+                    shareLinkInput.value = data.url;
+                    shareModal.style.display = 'flex';
                 } else {
                     alert(data.erro || 'Erro ao gerar link');
                 }
@@ -1423,7 +1416,6 @@
                 alert('Erro de conexão');
             }
         };
-
         function sortDocuments(docs) {
             const sorted = [...docs];
             switch(currentSort) {
@@ -1853,5 +1845,55 @@
 
         loadDocuments();
     </script>
+    <!-- Modal de compartilhar -->
+    <div id="shareModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; height: auto; border-radius: 16px;">
+            <div class="modal-header">
+                <h3>🔗 Link de partilha</h3>
+                <button class="modal-close" id="closeShareModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group">
+                    <label>Link do documento (válido até <span id="expiresDate"></span>)</label>
+                    <input type="text" id="shareLinkInput" readonly style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: #f5f5f5;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="copyShareLinkBtn" style="flex: 1; background: #2a5298; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">📋 Copiar link</button>
+                    <button id="closeShareModalBtn" style="flex: 1; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer;">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal de compartilhar - JavaScript
+        const shareModal = document.getElementById('shareModal');
+        const shareLinkInput = document.getElementById('shareLinkInput');
+        const expiresDateSpan = document.getElementById('expiresDate');
+        const closeShareModal = document.getElementById('closeShareModal');
+        const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+        const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+
+        if (closeShareModal) closeShareModal.onclick = () => shareModal.style.display = 'none';
+        if (closeShareModalBtn) closeShareModalBtn.onclick = () => shareModal.style.display = 'none';
+        window.onclick = (e) => { if (e.target === shareModal) shareModal.style.display = 'none'; };
+
+        if (copyShareLinkBtn) {
+            copyShareLinkBtn.onclick = async () => {
+                const link = shareLinkInput.value;
+                if (!link) return;
+                try {
+                    await navigator.clipboard.writeText(link);
+                    copyShareLinkBtn.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyShareLinkBtn.textContent = '📋 Copiar link'; }, 2000);
+                } catch (err) {
+                    shareLinkInput.select();
+                    document.execCommand('copy');
+                    copyShareLinkBtn.textContent = '✅ Copiado!';
+                    setTimeout(() => { copyShareLinkBtn.textContent = '📋 Copiar link'; }, 2000);
+                }
+            };
+        }
+
 </body>
 </html>
