@@ -715,6 +715,12 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
+
+// Rota de teste (colocar ANTES do app.listen)
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Servidor funcionando!' });
+});
+
 app.listen(PORT, () => {
     console.log(`📁 Sistema de Documentos rodando em http://localhost:${PORT}`);
     console.log(`🗄️ Supabase conectado: ${supabaseUrl}`);
