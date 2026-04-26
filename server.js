@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -41,6 +42,45 @@ function fixEncoding(str) {
     }
 }
 
+// Função para detectar o tipo do arquivo pela extensão
+function detectFileType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    
+    // Documentos
+    if (ext === 'pdf') return 'pdf';
+    if (['doc', 'docx'].includes(ext)) return 'word';
+    if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
+    
+    // Código
+    if (['c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat'].includes(ext)) return 'code';
+    
+    // Imagens
+    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext)) return 'image';
+    
+    // Áudio
+    if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) return 'audio';
+    
+    // Vídeo
+    if (['mp4', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv'].includes(ext)) return 'video';
+    
+    // Planilhas
+    if (['xls', 'xlsx', 'ods', 'csv'].includes(ext)) return 'spreadsheet';
+    
+    // Compactados
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return 'compressed';
+    
+    // E-books
+    if (['epub', 'mobi', 'azw', 'azw3'].includes(ext)) return 'ebook';
+    
+    // Design
+    if (['psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp'].includes(ext)) return 'design';
+    
+    // Texto
+    if (['txt', 'md', 'rtf', 'odt'].includes(ext)) return 'text';
+    
+    return 'outro';
+}
+
 // Middleware de autenticação
 const authenticate = async (req, res, next) => {
     let token = req.headers.authorization?.split(' ')[1];
@@ -77,7 +117,6 @@ app.post('/api/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Inserir no Supabase
         const { data, error } = await supabase
             .from('usuarios')
             .insert([{ email, password: hashedPassword }])
@@ -85,7 +124,7 @@ app.post('/api/register', async (req, res) => {
             .single();
 
         if (error) {
-            if (error.code === '23505') { // unique violation
+            if (error.code === '23505') {
                 return res.status(400).json({ erro: 'Email já registado' });
             }
             console.error('Erro Supabase:', error);
@@ -138,16 +177,38 @@ app.post('/api/login', async (req, res) => {
 // Upload de documento (usando Supabase Storage)
 app.post('/api/upload', authenticate, async (req, res) => {
     const multer = require('multer');
+    
+    // LISTA COMPLETA DE EXTENSÕES PERMITIDAS
+    const allowedExtensions = [
+        // Documentos
+        '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.md', '.rtf', '.odt',
+        // Código
+        '.c', '.cpp', '.h', '.hpp', '.py', '.js', '.ts', '.java', '.php', '.rb', '.go', '.rs', '.html', '.css', '.json', '.xml', '.sql', '.sh', '.bat',
+        // Imagens
+        '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
+        // Áudio
+        '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
+        // Vídeo
+        '.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv',
+        // Planilhas
+        '.xls', '.xlsx', '.ods', '.csv',
+        // Compactados
+        '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
+        // E-books
+        '.epub', '.mobi', '.azw', '.azw3',
+        // Design
+        '.psd', '.ai', '.eps', '.cdr', '.dwg', '.dxf', '.skp'
+    ];
+    
     const upload = multer({ 
         storage: multer.memoryStorage(),
         limits: { fileSize: 100 * 1024 * 1024 },
         fileFilter: (req, file, cb) => {
-            const allowedTypes = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
             const ext = path.extname(file.originalname).toLowerCase();
-            if (allowedTypes.includes(ext)) {
+            if (allowedExtensions.includes(ext)) {
                 cb(null, true);
             } else {
-                cb(new Error('Tipo de ficheiro não permitido. Apenas PDF, Word e PowerPoint.'));
+                cb(new Error(`Tipo de ficheiro não permitido. Extensão ${ext} não suportada.`));
             }
         }
     }).single('documento');
@@ -173,19 +234,17 @@ app.post('/api/upload', authenticate, async (req, res) => {
             }
         }
         
-        const ext = path.extname(originalName).toLowerCase();
-        let fileType = 'outro';
-        if (ext === '.pdf') fileType = 'pdf';
-        else if (['.doc', '.docx'].includes(ext)) fileType = 'word';
-        else if (['.ppt', '.pptx'].includes(ext)) fileType = 'powerpoint';
-
+        // Detectar o tipo do arquivo usando a nova função
+        const fileType = detectFileType(originalName);
+        
         // Gerar nome único para o arquivo no Storage
+        const ext = path.extname(originalName).toLowerCase();
         const uniqueFileName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
         const filePath = `user_${req.userId}/${uniqueFileName}`;
 
         try {
             // Upload para Supabase Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('documentos')
                 .upload(filePath, file.buffer, {
                     contentType: file.mimetype,
@@ -221,7 +280,6 @@ app.post('/api/upload', authenticate, async (req, res) => {
 
             if (dbError) {
                 console.error('Erro no banco:', dbError);
-                // Tentar deletar o arquivo do storage se falhar no banco
                 await supabase.storage.from('documentos').remove([filePath]);
                 return res.status(500).json({ erro: 'Erro ao guardar documento' });
             }
@@ -286,8 +344,6 @@ app.get('/api/download/:id', authenticate, async (req, res) => {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
 
-        // Redirecionar para URL pública ou fazer stream
-        const originalName = fixEncoding(doc.original_name);
         res.redirect(doc.file_url);
     } catch (error) {
         console.error(error);
@@ -311,16 +367,6 @@ app.get('/api/view/:id', authenticate, async (req, res) => {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
 
-        // Redirecionar para URL pública para visualização
-        const ext = path.extname(doc.original_name).toLowerCase();
-        let contentType = 'application/octet-stream';
-        if (ext === '.pdf') contentType = 'application/pdf';
-        else if (ext === '.doc') contentType = 'application/msword';
-        else if (ext === '.docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        else if (ext === '.ppt') contentType = 'application/vnd.ms-powerpoint';
-        else if (ext === '.pptx') contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-        
-        res.setHeader('Content-Type', contentType);
         res.redirect(doc.file_url);
     } catch (error) {
         console.error(error);
@@ -344,11 +390,9 @@ app.delete('/api/documents/delete-all', authenticate, async (req, res) => {
             return res.json({ sucesso: true, mensagem: 'Nenhum documento para apagar', count: 0 });
         }
 
-        // Apagar arquivos do Storage
         const filesToDelete = docs.map(doc => `user_${userId}/${doc.filename}`);
         await supabase.storage.from('documentos').remove(filesToDelete);
 
-        // Apagar registros do banco
         const { error: deleteError } = await supabase
             .from('documentos')
             .delete()
@@ -379,11 +423,9 @@ app.delete('/api/documents/:id', authenticate, async (req, res) => {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
 
-        // Apagar do Storage
         const filePath = `user_${req.userId}/${doc.filename}`;
         await supabase.storage.from('documentos').remove([filePath]);
 
-        // Apagar do banco
         const { error: deleteError } = await supabase
             .from('documentos')
             .delete()
@@ -406,21 +448,11 @@ app.put('/api/documents/:id/rename', authenticate, async (req, res) => {
     if (!newName) return res.status(400).json({ erro: 'Nome não fornecido' });
     
     try {
-        const { data: doc, error: findError } = await supabase
-            .from('documentos')
-            .select('original_name')
-            .eq('id', docId)
-            .eq('user_id', req.userId)
-            .single();
-
-        if (findError || !doc) {
-            return res.status(404).json({ erro: 'Documento não encontrado' });
-        }
-        
         const { error: updateError } = await supabase
             .from('documentos')
             .update({ original_name: newName })
-            .eq('id', docId);
+            .eq('id', docId)
+            .eq('user_id', req.userId);
 
         if (updateError) throw updateError;
 
@@ -494,15 +526,13 @@ app.post('/api/documents/:id/share', authenticate, async (req, res) => {
         const expires_at = new Date();
         expires_at.setDate(expires_at.getDate() + expires_days);
         
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('share_links')
             .insert([{
                 document_id: docId,
                 token: token,
                 expires_at: expires_at.toISOString()
-            }])
-            .select()
-            .single();
+            }]);
 
         if (error) throw error;
 
@@ -653,7 +683,6 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
     const userId = req.userId;
     
     try {
-        // Buscar documentos do usuário
         const { data: docs, error: listError } = await supabase
             .from('documentos')
             .select('filename')
@@ -661,19 +690,14 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
 
         if (listError) throw listError;
 
-        // Apagar arquivos do Storage
         if (docs && docs.length > 0) {
             const filesToDelete = docs.map(doc => `user_${userId}/${doc.filename}`);
             await supabase.storage.from('documentos').remove(filesToDelete);
         }
 
-        // Apagar a pasta do usuário no storage (opcional)
         await supabase.storage.from('documentos').remove([`user_${userId}`]);
-
-        // Apagar documentos e links (cascade)
         await supabase.from('documentos').delete().eq('user_id', userId);
         
-        // Apagar usuário
         const { error: deleteError } = await supabase
             .from('usuarios')
             .delete()
