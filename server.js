@@ -133,17 +133,12 @@ const authenticate = async (req, res, next) => {
 // ROTAS DE AUTENTICAÇÃO
 // ============================================
 
-// Registar novo utilizador
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
+    console.log('📝 Tentando registrar:', email);
 
-    // Validação de entrada
     if (!email || !password) {
         return res.status(400).json({ erro: 'Email e password são obrigatórios' });
-    }
-
-    if (!isValidEmail(email)) {
-        return res.status(400).json({ erro: 'Email inválido' });
     }
 
     if (password.length < 6) {
@@ -151,51 +146,28 @@ app.post('/api/register', async (req, res) => {
     }
 
     try {
-        // Verificar se o email já existe
-        const { data: existingUser } = await supabase
-            .from('usuarios')
-            .select('id')
-            .eq('email', email.toLowerCase())
-            .single();
-
-        if (existingUser) {
-            return res.status(409).json({ erro: 'Email já registado' });
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
         
         const { data, error } = await supabase
             .from('usuarios')
-            .insert([{ 
-                email: email.toLowerCase(), 
-                password: hashedPassword 
-            }])
+            .insert([{ email: email.toLowerCase(), password: hashedPassword }])
             .select()
             .single();
 
         if (error) {
-            console.error('Erro Supabase:', error);
-            return res.status(400).json({ erro: 'Erro ao registar utilizador' });
+            // ESTA LINHA É IMPORTANTE - MOSTRA O ERRO REAL
+            console.error('❌ ERRO DETALHADO DO SUPABASE:', JSON.stringify(error, null, 2));
+            return res.status(400).json({ erro: `Erro: ${error.message}` });
         }
         
-        const token = jwt.sign(
-            { userId: data.id, email: data.email }, 
-            SECRET_KEY, 
-            { expiresIn: '7d' }
-        );
-
-        res.status(201).json({ 
-            sucesso: true, 
-            token, 
-            userId: data.id, 
-            email: data.email 
-        });
+        console.log('✅ Usuário criado:', data.id);
+        const token = jwt.sign({ userId: data.id, email }, SECRET_KEY, { expiresIn: '7d' });
+        res.json({ sucesso: true, token, userId: data.id, email });
     } catch (error) {
-        console.error('Erro geral:', error);
-        res.status(500).json({ erro: 'Erro ao registar utilizador' });
+        console.error('❌ ERRO GERAL:', error);
+        res.status(500).json({ erro: `Erro: ${error.message}` });
     }
 });
-
 // Login
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
