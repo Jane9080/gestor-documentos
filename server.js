@@ -51,9 +51,18 @@ const ALLOWED_EXTENSIONS = [
     // E-books
     'epub', 'mobi', 'azw', 'azw3',
     // Design
-    'psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp'
+    'psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp',
+    // Engenharia / Eletrónica
+    'circ', 'pcb', 'sch', 'brd', 'gerber', 'gbr',
+    // CAD / Desenho Técnico
+    'stp', 'step', 'iges', 'igs',
+    // Modelagem 3D
+    'stl', '3mf', 'obj', 'blend',
+    // KiCad
+    'kicad_pcb', 'kicad_sch',
+    // Visio / Diagramas
+    'odg', 'vsd'
 ];
-
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 const upload = multer({
