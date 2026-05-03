@@ -62,6 +62,8 @@ const ALLOWED_EXTENSIONS = [
     'kicad_pcb', 'kicad_sch',
     // Visio / Diagramas
     'odg', 'vsd'
+    //matlab
+    'm', 'mlx'
 ];
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
