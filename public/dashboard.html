@@ -861,7 +861,8 @@
                 <p>Arraste e solte um ou mais ficheiros aqui</p>
                 <p>ou</p>
                 <button id="selectFileBtn" style="background: #2a5298; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Selecionar ficheiros</button>
-                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.java,.php,.rb,.go,.rs,.html,.css,.json,.xml,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.ico,.xls,.xlsx,.ods,.csv,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.ogg,.flac,.m4a,.mp4,.avi,.mkv,.mov,.webm,.epub,.mobi,.psd,.ai,.eps,.dwg,.dxf,.circ,.pcb,.sch,.brd,.gerber,.gbr,.stp,.step,.iges,.igs,.stl,.3mf,.obj,.blend,.kicad_pcb,.kicad_sch,.odg,.vsd,.m,.mlx" multiple>                <p><small>Formatos suportados: Documentos, Código, Imagens, Planilhas, Compactados, Áudio, Vídeo, E-books e mais (até 100MB por ficheiro)</small></p>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.java,.php,.rb,.go,.rs,.html,.css,.json,.xml,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.ico,.xls,.xlsx,.ods,.csv,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.ogg,.flac,.m4a,.mp4,.avi,.mkv,.mov,.webm,.epub,.mobi,.psd,.ai,.eps,.dwg,.dxf,.circ,.pcb,.sch,.brd,.gerber,.gbr,.stp,.step,.iges,.igs,.stl,.3mf,.obj,.blend,.kicad_pcb,.kicad_sch,.odg,.vsd,.m,.mlx" multiple>
+                <p><small>Formatos suportados: Documentos, Código, Imagens, Planilhas, Compactados, Áudio, Vídeo, E-books e mais (até 100MB por ficheiro)</small></p>
             </div>
             <div class="upload-tags">
                 <input type="text" id="uploadTags" placeholder="🏷️ Tags (separadas por vírgula) ex: trabalho, importante, urgente">
@@ -896,6 +897,7 @@
                     <button class="filter-btn" data-filter="video">🎬 Vídeo</button>
                     <button class="filter-btn" data-filter="spreadsheet">📊 Planilhas</button>
                     <button class="filter-btn" data-filter="compressed">📦 Compactados</button>
+                    <button class="filter-btn" data-filter="engineering">🔧 Engenharia</button>
                 </div>
                 <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
                 <button id="filterDuplicateBtn" class="filter-duplicate-btn">🔄 Duplicados</button>
@@ -1045,7 +1047,8 @@
             if (ext === 'pdf') return 'pdf';
             if (['doc', 'docx'].includes(ext)) return 'word';
             if (['ppt', 'pptx'].includes(ext)) return 'powerpoint';
-            if (['c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat'].includes(ext)) return 'code';
+            // Código (MATLAB .m e .mlx incluídos)
+            if (['c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'm', 'mlx'].includes(ext)) return 'code';
             if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico'].includes(ext)) return 'image';
             if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) return 'audio';
             if (['mp4', 'avi', 'mkv', 'mov', 'webm', 'wmv', 'flv'].includes(ext)) return 'video';
@@ -1053,6 +1056,8 @@
             if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return 'compressed';
             if (['epub', 'mobi', 'azw', 'azw3'].includes(ext)) return 'ebook';
             if (['psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp'].includes(ext)) return 'design';
+            // Engenharia
+            if (['circ', 'pcb', 'sch', 'brd', 'gerber', 'gbr', 'stp', 'step', 'iges', 'igs', 'stl', '3mf', 'obj', 'blend', 'kicad_pcb', 'kicad_sch', 'odg', 'vsd'].includes(ext)) return 'engineering';
             if (['txt', 'md', 'rtf', 'odt'].includes(ext)) return 'text';
             
             return 'outro';
@@ -1063,7 +1068,7 @@
             const icons = {
                 pdf: '📄', word: '📝', powerpoint: '📊', image: '🖼️', code: '💻',
                 audio: '🎵', video: '🎬', spreadsheet: '📊', compressed: '📦',
-                ebook: '📚', design: '🎨', text: '📃', outro: '📎'
+                ebook: '📚', design: '🎨', text: '📃', engineering: '🔧', outro: '📎'
             };
             return icons[fileType] || '📎';
         }
@@ -1136,23 +1141,22 @@
             filterAndRenderDocuments();
         }
 
-      const allowedExtensions = [
-    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.md', '.rtf', '.odt',
-    '.c', '.cpp', '.h', '.hpp', '.py', '.js', '.ts', '.java', '.php', '.rb', '.go', '.rs', '.html', '.css', '.json', '.xml', '.sql', '.sh', '.bat',
-    '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
-    '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
-    '.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv',
-    '.xls', '.xlsx', '.ods', '.csv',
-    '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
-    '.epub', '.mobi', '.azw', '.azw3',
-    '.psd', '.ai', '.eps', '.cdr', '.dwg', '.dxf', '.skp',
-    // Engenharia / Eletrónica
-    '.circ', '.pcb', '.sch', '.brd', '.gerber', '.gbr',
-    '.stp', '.step', '.iges', '.igs',
-    '.stl', '.3mf', '.obj', '.blend',
-    '.kicad_pcb', '.kicad_sch',
-    '.odg', '.vsd','.m', '.mlx'
-];
+        const allowedExtensions = [
+            '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.md', '.rtf', '.odt',
+            '.c', '.cpp', '.h', '.hpp', '.py', '.js', '.ts', '.java', '.php', '.rb', '.go', '.rs', '.html', '.css', '.json', '.xml', '.sql', '.sh', '.bat',
+            '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
+            '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
+            '.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv',
+            '.xls', '.xlsx', '.ods', '.csv',
+            '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
+            '.epub', '.mobi', '.azw', '.azw3',
+            '.psd', '.ai', '.eps', '.cdr', '.dwg', '.dxf', '.skp',
+            '.circ', '.pcb', '.sch', '.brd', '.gerber', '.gbr',
+            '.stp', '.step', '.iges', '.igs',
+            '.stl', '.3mf', '.obj', '.blend',
+            '.kicad_pcb', '.kicad_sch',
+            '.odg', '.vsd', '.m', '.mlx'
+        ];
 
         async function processQueue() {
             if (pendingFiles.length === 0) return;
@@ -1509,7 +1513,8 @@
             const codeCount = docs.filter(d => d.file_type === 'code').length;
             const audioCount = docs.filter(d => d.file_type === 'audio').length;
             const videoCount = docs.filter(d => d.file_type === 'video').length;
-            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video'].includes(d.file_type)).length;
+            const engineeringCount = docs.filter(d => d.file_type === 'engineering').length;
+            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video', 'engineering'].includes(d.file_type)).length;
             const favCount = docs.filter(d => d.favorite === 1).length;
             
             const seen = new Map();
@@ -1532,6 +1537,7 @@
                 <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
                 <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
                 <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
+                <div class="stat-item"><span class="stat-icon">🔧</span> Engenharia: ${engineeringCount}</div>
                 <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
                 <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
                 <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
@@ -1585,47 +1591,45 @@
             } catch (error) { console.error(error); alert('Erro de conexão'); }
         });
 
-       document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
-    // Pedir a senha primeiro
-    const password = prompt('🔒 Para apagar a sua conta, digite a sua PASSWORD:');
-    if (!password) {
-        alert('Operação cancelada.');
-        return;
-    }
-    
-    // Depois confirmar
-    const confirmacao = prompt('⚠️ ATENÇÃO! Digite "APAGAR" para confirmar a exclusão permanente da sua conta:');
-    if (confirmacao !== 'APAGAR') { 
-        alert('Operação cancelada.'); 
-        return; 
-    }
-    
-    if (!confirm('Tem certeza absoluta? Todos os seus documentos serão apagados permanentemente.')) return;
-    
-    try {
-        const response = await fetch(`${API_URL}/user/delete`, { 
-            method: 'DELETE', 
-            headers: { 
-                'Authorization': `Bearer ${currentToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ password: password })
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+            const password = prompt('🔒 Para apagar a sua conta, digite a sua PASSWORD:');
+            if (!password) {
+                alert('Operação cancelada.');
+                return;
+            }
+            
+            const confirmacao = prompt('⚠️ ATENÇÃO! Digite "APAGAR" para confirmar a exclusão permanente da sua conta:');
+            if (confirmacao !== 'APAGAR') { 
+                alert('Operação cancelada.'); 
+                return; 
+            }
+            
+            if (!confirm('Tem certeza absoluta? Todos os seus documentos serão apagados permanentemente.')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/user/delete`, { 
+                    method: 'DELETE', 
+                    headers: { 
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+                const data = await response.json();
+                if (data.sucesso) {
+                    alert('✅ Conta apagada com sucesso.');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userId');
+                    window.location.href = '/login.html';
+                } else { 
+                    alert(data.erro || 'Erro ao apagar conta'); 
+                }
+            } catch (error) { 
+                console.error(error); 
+                alert('Erro de conexão'); 
+            }
         });
-        const data = await response.json();
-        if (data.sucesso) {
-            alert('✅ Conta apagada com sucesso.');
-            localStorage.removeItem('token');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userId');
-            window.location.href = '/login.html';
-        } else { 
-            alert(data.erro || 'Erro ao apagar conta'); 
-        }
-    } catch (error) { 
-        console.error(error); 
-        alert('Erro de conexão'); 
-    }
-});
 
         async function loadDocuments() {
             documentsList.innerHTML = '<div class="loading-state">⏳ Carregando documentos...</div>';
@@ -1714,36 +1718,36 @@
         function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / (1024 * 1024)).toFixed(1) + ' MB'; }
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
-    window.viewDocument = (id, name) => {
-    modalTitle.textContent = name;
-    const fileType = name.split('.').pop().toLowerCase();
-    const url = `${API_URL}/view/${id}?token=${currentToken}`;
-    viewerFrame.innerHTML = '';
-    
-    if (fileType === 'pdf') {
-        viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
-    } else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(fileType)) {
-        viewerFrame.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto;">`;
-    } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(fileType)) {
-        viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${url}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
-    } else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(fileType)) {
-        viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${url}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
-    } else if (['txt', 'md', 'c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'circ', 'stp', 'step', 'stl', 'kicad_pcb', 'kicad_sch', 'odg','m','mlx'].includes(fileType)) {
-        // Arquivos de texto/código/engenharia - visualizar como texto
-        fetch(url)
-            .then(response => response.text())
-            .then(text => {
-                viewerFrame.innerHTML = `<pre style="padding: 20px; background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; height: 100%; overflow: auto; margin: 0;">${escapeHtml(text)}</pre>`;
-            })
-            .catch(() => {
+        window.viewDocument = (id, name) => {
+            modalTitle.textContent = name;
+            const fileType = name.split('.').pop().toLowerCase();
+            const url = `${API_URL}/view/${id}?token=${currentToken}`;
+            viewerFrame.innerHTML = '';
+            
+            if (fileType === 'pdf') {
+                viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(fileType)) {
+                viewerFrame.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto;">`;
+            } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(fileType)) {
+                viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${url}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
+            } else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(fileType)) {
+                viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${url}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
+            } else if (['txt', 'md', 'c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'm', 'mlx', 'circ', 'stp', 'step', 'stl', 'kicad_pcb', 'kicad_sch', 'odg'].includes(fileType)) {
+                fetch(url)
+                    .then(response => response.text())
+                    .then(text => {
+                        viewerFrame.innerHTML = `<pre style="padding: 20px; background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; height: 100%; overflow: auto; margin: 0;">${escapeHtml(text)}</pre>`;
+                    })
+                    .catch(() => {
+                        viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+                    });
+            } else {
                 viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-            });
-    } else {
-        viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-    }
-    
-    viewModal.style.display = 'flex';
-};
+            }
+            
+            viewModal.style.display = 'flex';
+        };
+        
         window.downloadDocument = (id) => { window.open(`${API_URL}/download/${id}?token=${currentToken}`, '_blank'); };
         
         window.deleteDocument = async (id) => {
