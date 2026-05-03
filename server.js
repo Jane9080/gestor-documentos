@@ -61,7 +61,7 @@ const ALLOWED_EXTENSIONS = [
     // KiCad
     'kicad_pcb', 'kicad_sch',
     // Visio / Diagramas
-    'odg', 'vsd'
+    'odg', 'vsd',
     //matlab
     'm', 'mlx'
 ];
