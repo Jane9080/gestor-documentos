@@ -53,7 +53,7 @@ const ALLOWED_EXTENSIONS = [
     // Design
     'psd', 'ai', 'eps', 'cdr', 'dwg', 'dxf', 'skp',
     // Engenharia / Eletrónica
-    'circ', 'pcb', 'sch', 'brd', 'gerber', 'gbr',
+    'circ', 'pcb', 'sch', 'brd', 'gerber', 'gbr','pwb',
     // CAD / Desenho Técnico
     'stp', 'step', 'iges', 'igs',
     // Modelagem 3D
