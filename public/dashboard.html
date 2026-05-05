@@ -861,7 +861,7 @@
                 <p>Arraste e solte um ou mais ficheiros aqui</p>
                 <p>ou</p>
                 <button id="selectFileBtn" style="background: #2a5298; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Selecionar ficheiros</button>
-                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.java,.php,.rb,.go,.rs,.html,.css,.json,.xml,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.ico,.xls,.xlsx,.ods,.csv,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.ogg,.flac,.m4a,.mp4,.avi,.mkv,.mov,.webm,.epub,.mobi,.psd,.ai,.eps,.dwg,.dxf,.circ,.pcb,.sch,.brd,.gerber,.gbr,.stp,.step,.iges,.igs,.stl,.3mf,.obj,.blend,.kicad_pcb,.kicad_sch,.odg,.vsd,.m,.mlx" multiple>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.java,.php,.rb,.go,.rs,.html,.css,.json,.xml,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.ico,.xls,.xlsx,.ods,.csv,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.ogg,.flac,.m4a,.mp4,.avi,.mkv,.mov,.webm,.epub,.mobi,.psd,.ai,.eps,.dwg,.dxf,.circ,.pcb,.sch,.brd,.gerber,.gbr,.stp,.step,.iges,.igs,.stl,.3mf,.obj,.blend,.kicad_pcb,.kicad_sch,.odg,.vsd,.m,.mlx,.pwb" multiple>
                 <p><small>Formatos suportados: Documentos, Código, Imagens, Planilhas, Compactados, Áudio, Vídeo, E-books e mais (até 100MB por ficheiro)</small></p>
             </div>
             <div class="upload-tags">
@@ -1732,7 +1732,7 @@
                 viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${url}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
             } else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(fileType)) {
                 viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${url}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
-            } else if (['txt', 'md', 'c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'm', 'mlx', 'circ', 'stp', 'step', 'stl', 'kicad_pcb', 'kicad_sch', 'odg'].includes(fileType)) {
+            } else if (['txt', 'md', 'c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'm', 'mlx', 'circ', 'stp', 'step', 'stl', 'kicad_pcb', 'kicad_sch', 'odg','pwb'].includes(fileType)) {
                 fetch(url)
                     .then(response => response.text())
                     .then(text => {
