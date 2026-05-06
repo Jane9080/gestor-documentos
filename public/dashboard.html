@@ -1718,56 +1718,51 @@
         function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / (1024 * 1024)).toFixed(1) + ' MB'; }
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
-        window.viewDocument = (id, name) => {
+window.viewDocument = async (id, name) => {
     modalTitle.textContent = name;
     const fileType = name.split('.').pop().toLowerCase();
-    const url = `${API_URL}/view/${id}?token=${currentToken}`;
-    viewerFrame.innerHTML = '';
     
-    if (fileType === 'pdf') {
-        // PDF: visualização nativa
-        viewerFrame.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%">`;
-    } 
-    else if (['doc', 'docx'].includes(fileType)) {
-        // Word: abrir no Google Docs Viewer (só leitura)
-        const googleDocsUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-        viewerFrame.innerHTML = `<iframe src="${googleDocsUrl}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+    // Buscar a URL pública diretamente do servidor
+    try {
+        const response = await fetch(`${API_URL}/view/${id}?token=${currentToken}`);
+        const fileUrl = response.url; // URL final após redirecionamento
+        
+        viewerFrame.innerHTML = '';
+        
+        if (fileType === 'pdf') {
+            viewerFrame.innerHTML = `<embed src="${fileUrl}" type="application/pdf" width="100%" height="100%">`;
+        }
+        else if (['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileType)) {
+            // Google Docs Viewer - usa URL limpa (sem token)
+            const googleViewer = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(fileUrl)}`;
+            viewerFrame.innerHTML = `<iframe src="${googleViewer}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+        }
+        else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(fileType)) {
+            viewerFrame.innerHTML = `<img src="${fileUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto;">`;
+        }
+        else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(fileType)) {
+            viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${fileUrl}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
+        }
+        else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(fileType)) {
+            viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${fileUrl}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
+        }
+        else {
+            // Código e textos
+            fetch(fileUrl)
+                .then(res => res.text())
+                .then(text => {
+                    viewerFrame.innerHTML = `<pre style="padding: 20px; background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; height: 100%; overflow: auto; margin: 0;">${escapeHtml(text)}</pre>`;
+                })
+                .catch(() => {
+                    viewerFrame.innerHTML = `<iframe src="${fileUrl}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+                });
+        }
+        
+        viewModal.style.display = 'flex';
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao abrir o documento');
     }
-    else if (['ppt', 'pptx'].includes(fileType)) {
-        // PowerPoint: abrir no Google Docs Viewer
-        const googleDocsUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-        viewerFrame.innerHTML = `<iframe src="${googleDocsUrl}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-    }
-    else if (['xls', 'xlsx'].includes(fileType)) {
-        // Excel: abrir no Google Docs Viewer
-        const googleDocsUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-        viewerFrame.innerHTML = `<iframe src="${googleDocsUrl}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-    }
-    else if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(fileType)) {
-        viewerFrame.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto;">`;
-    } 
-    else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(fileType)) {
-        viewerFrame.innerHTML = `<audio controls style="width: 100%; margin-top: 20%;"><source src="${url}" type="audio/${fileType}">Seu navegador não suporta áudio</audio>`;
-    } 
-    else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(fileType)) {
-        viewerFrame.innerHTML = `<video controls style="width: 100%; max-height: 100%;"><source src="${url}" type="video/${fileType}">Seu navegador não suporta vídeo</video>`;
-    } 
-    else if (['txt', 'md', 'c', 'cpp', 'h', 'hpp', 'py', 'js', 'ts', 'java', 'php', 'rb', 'go', 'rs', 'html', 'css', 'json', 'xml', 'sql', 'sh', 'bat', 'm', 'mlx', 'circ', 'stp', 'step', 'stl', 'kicad_pcb', 'kicad_sch', 'odg', 'pwb'].includes(fileType)) {
-        // Arquivos de texto/código/engenharia - visualizar como texto
-        fetch(url)
-            .then(response => response.text())
-            .then(text => {
-                viewerFrame.innerHTML = `<pre style="padding: 20px; background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; height: 100%; overflow: auto; margin: 0;">${escapeHtml(text)}</pre>`;
-            })
-            .catch(() => {
-                viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-            });
-    } 
-    else {
-        viewerFrame.innerHTML = `<iframe src="${url}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
-    }
-    
-    viewModal.style.display = 'flex';
 };
         
         window.downloadDocument = (id) => { window.open(`${API_URL}/download/${id}?token=${currentToken}`, '_blank'); };
