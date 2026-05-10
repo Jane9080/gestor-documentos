@@ -1530,21 +1530,20 @@
                 }
             });
             
-            document.getElementById('stats').innerHTML = `
-                <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
-                <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
-                <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
-                <div class="stat-item"><span class="stat-icon">🖼️</span> Imagens: ${imageCount}</div>
-                <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
-                <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
-                <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
-                <div class="stat-item"><span class="stat-icon">🔧</span> Engenharia: ${engineeringCount}</div>
-                <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
-                <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
-                <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
-                <div class="stat-item"><span class="stat-icon">📄</span> TXT: ${textCount}</div>
-            `;
-        }
+        document.getElementById('stats').innerHTML = `
+    <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
+    <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
+    <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
+    <div class="stat-item"><span class="stat-icon">🖼️</span> Imagens: ${imageCount}</div>
+    <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
+    <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
+    <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
+    <div class="stat-item"><span class="stat-icon">🔧</span> Engenharia: ${engineeringCount}</div>
+    <div class="stat-item"><span class="stat-icon">📄</span> TXT: ${textCount}</div>
+    <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
+    <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
+    <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+`;
 
         function updateTagFilter(docs) {
             const allTags = new Set();
