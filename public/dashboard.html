@@ -1507,7 +1507,7 @@
             updateTagFilter(allDocuments);
         }
 
-        function updateStats(docs) {
+      function updateStats(docs) {
     const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
     const wordCount = docs.filter(d => d.file_type === 'word').length;
     const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
@@ -1516,34 +1516,37 @@
     const audioCount = docs.filter(d => d.file_type === 'audio').length;
     const videoCount = docs.filter(d => d.file_type === 'video').length;
     const engineeringCount = docs.filter(d => d.file_type === 'engineering').length;
-    const textCount = docs.filter(d => d.file_type === 'text').length;  // <-- NOVA LINHA
+    const textCount = docs.filter(d => d.file_type === 'text').length;
+    const favCount = docs.filter(d => d.favorite === 1).length;  // <-- LINHA FALTANDO!
     const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video', 'engineering', 'text'].includes(d.file_type)).length;
-            const seen = new Map();
-            let duplicatesCount = 0;
-            
-            docs.forEach(doc => {
-                const key = `${doc.original_name}|${doc.file_size}`;
-                if (seen.has(key)) {
-                    duplicatesCount++;
-                } else {
-                    seen.set(key, doc.id);
-                }
-            });
-            
-        document.getElementById('stats').innerHTML = `
-    <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
-    <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
-    <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
-    <div class="stat-item"><span class="stat-icon">🖼️</span> Imagens: ${imageCount}</div>
-    <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
-    <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
-    <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
-    <div class="stat-item"><span class="stat-icon">🔧</span> Engenharia: ${engineeringCount}</div>
-    <div class="stat-item"><span class="stat-icon">📄</span> TXT: ${textCount}</div>
-    <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
-    <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
-    <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
-`;
+    
+    const seen = new Map();
+    let duplicatesCount = 0;
+    
+    docs.forEach(doc => {
+        const key = `${doc.original_name}|${doc.file_size}`;
+        if (seen.has(key)) {
+            duplicatesCount++;
+        } else {
+            seen.set(key, doc.id);
+        }
+    });
+    
+    document.getElementById('stats').innerHTML = `
+        <div class="stat-item"><span class="stat-icon">📄</span> PDF: ${pdfCount}</div>
+        <div class="stat-item"><span class="stat-icon">📝</span> Word: ${wordCount}</div>
+        <div class="stat-item"><span class="stat-icon">📊</span> PowerPoint: ${pptCount}</div>
+        <div class="stat-item"><span class="stat-icon">🖼️</span> Imagens: ${imageCount}</div>
+        <div class="stat-item"><span class="stat-icon">💻</span> Código: ${codeCount}</div>
+        <div class="stat-item"><span class="stat-icon">🎵</span> Áudio: ${audioCount}</div>
+        <div class="stat-item"><span class="stat-icon">🎬</span> Vídeo: ${videoCount}</div>
+        <div class="stat-item"><span class="stat-icon">🔧</span> Engenharia: ${engineeringCount}</div>
+        <div class="stat-item"><span class="stat-icon">📄</span> TXT: ${textCount}</div>
+        <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
+        <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
+        <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+    `;
+}
 
         function updateTagFilter(docs) {
             const allTags = new Set();
