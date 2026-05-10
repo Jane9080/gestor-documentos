@@ -898,6 +898,8 @@
                     <button class="filter-btn" data-filter="spreadsheet">📊 Planilhas</button>
                     <button class="filter-btn" data-filter="compressed">📦 Compactados</button>
                     <button class="filter-btn" data-filter="engineering">🔧 Engenharia</button>
+                    <button class="filter-btn" data-filter="text">📄 TXT</button>
+
                 </div>
                 <button id="filterFavBtn" class="filter-fav-btn">⭐ Favoritos</button>
                 <button id="filterDuplicateBtn" class="filter-duplicate-btn">🔄 Duplicados</button>
@@ -1506,17 +1508,16 @@
         }
 
         function updateStats(docs) {
-            const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
-            const wordCount = docs.filter(d => d.file_type === 'word').length;
-            const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
-            const imageCount = docs.filter(d => d.file_type === 'image').length;
-            const codeCount = docs.filter(d => d.file_type === 'code').length;
-            const audioCount = docs.filter(d => d.file_type === 'audio').length;
-            const videoCount = docs.filter(d => d.file_type === 'video').length;
-            const engineeringCount = docs.filter(d => d.file_type === 'engineering').length;
-            const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video', 'engineering'].includes(d.file_type)).length;
-            const favCount = docs.filter(d => d.favorite === 1).length;
-            
+    const pdfCount = docs.filter(d => d.file_type === 'pdf').length;
+    const wordCount = docs.filter(d => d.file_type === 'word').length;
+    const pptCount = docs.filter(d => d.file_type === 'powerpoint').length;
+    const imageCount = docs.filter(d => d.file_type === 'image').length;
+    const codeCount = docs.filter(d => d.file_type === 'code').length;
+    const audioCount = docs.filter(d => d.file_type === 'audio').length;
+    const videoCount = docs.filter(d => d.file_type === 'video').length;
+    const engineeringCount = docs.filter(d => d.file_type === 'engineering').length;
+    const textCount = docs.filter(d => d.file_type === 'text').length;  // <-- NOVA LINHA
+    const outrosCount = docs.filter(d => !['pdf', 'word', 'powerpoint', 'image', 'code', 'audio', 'video', 'engineering', 'text'].includes(d.file_type)).length;
             const seen = new Map();
             let duplicatesCount = 0;
             
@@ -1541,6 +1542,7 @@
                 <div class="stat-item"><span class="stat-icon stat-fav">⭐</span> Favoritos: ${favCount}</div>
                 <div class="stat-item"><span class="stat-icon" style="color: #dc3545;">🔄</span> Duplicados: ${duplicatesCount}</div>
                 <div class="stat-item"><span class="stat-icon">📁</span> Total: ${docs.length}</div>
+                <div class="stat-item"><span class="stat-icon">📄</span> TXT: ${textCount}</div>
             `;
         }
 
