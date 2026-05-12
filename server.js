@@ -1054,7 +1054,7 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
 // Obter estatísticas de armazenamento
 app.get('/api/storage/stats', authenticate, async (req, res) => {
     try {
-        const adminEmail = 'adminfabio@gmail.com';
+        const adminEmail = 'contasemnome9080956@gmail.com';
         const isAdmin = req.userEmail === adminEmail;
         
         if (!isAdmin) {
@@ -1108,7 +1108,7 @@ app.get('/api/storage/stats', authenticate, async (req, res) => {
 // Alterar configurações
 app.post('/api/storage/limit', authenticate, async (req, res) => {
     const { maxStorageMB, uploadsAllowed } = req.body;
-    const adminEmail = 'adminfabio@gmail.com';
+    const adminEmail = 'contasemnome9080956@gmail.com';
     
     if (req.userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso apenas para administrador' });
