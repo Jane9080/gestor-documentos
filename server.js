@@ -228,6 +228,34 @@ app.post('/api/login', async (req, res) => {
 // Upload de documento
 app.post('/api/upload', authenticate, (req, res) => {
     upload(req, res, async (err) => {
+                // Verificar se uploads estão permitidos
+        const { data: uploadsAllowedData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'uploads_allowed')
+            .single();
+        
+        if (uploadsAllowedData && uploadsAllowedData.value === 'false') {
+            return res.status(403).json({ erro: '📤 Uploads temporariamente desativados pelo administrador' });
+        }
+        
+        // Calcular espaço total usado
+        const { data: allDocs } = await supabase.from('documentos').select('file_size');
+        const totalUsedBytes = allDocs?.reduce((sum, doc) => sum + (doc.file_size || 0), 0) || 0;
+        const totalUsedMB = totalUsedBytes / (1024 * 1024);
+        
+        const { data: configData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'max_storage_mb')
+            .single();
+        
+        const maxStorageMB = configData ? parseInt(configData.value) : 90000;
+        
+        // Verificar se o novo arquivo cabe
+        if (totalUsedMB + (file.size / (1024 * 1024)) > maxStorageMB) {
+            return res.status(403).json({ erro: `❌ Limite de armazenamento excedido! Usado: ${totalUsedMB.toFixed(1)}MB / ${maxStorageMB}MB` });
+        }
         if (err) {
             return res.status(400).json({ erro: err.message });
         }
