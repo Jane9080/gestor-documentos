@@ -396,9 +396,10 @@ app.get('/api/download/:id', authenticate, async (req, res) => {
         else if (ext === 'png') mimeType = 'image/png';
         else if (ext === 'txt') mimeType = 'text/plain';
         
-        // Enviar o arquivo com o nome correto (forçando download)
+        // Usar formatação RFC 5987 para caracteres especiais
+        const filename = doc.original_name;
         res.setHeader('Content-Type', mimeType);
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.original_name)}"`);
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
         res.setHeader('Content-Length', fileData.size);
         res.send(Buffer.from(await fileData.arrayBuffer()));
         
@@ -407,7 +408,6 @@ app.get('/api/download/:id', authenticate, async (req, res) => {
         res.status(500).json({ erro: 'Erro ao fazer download' });
     }
 });
-
 // Visualizar documento
 app.get('/api/view/:id', authenticate, async (req, res) => {
     const docId = req.params.id;
