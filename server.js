@@ -372,7 +372,36 @@ app.get('/api/download/:id', authenticate, async (req, res) => {
             return res.status(404).json({ erro: 'Documento não encontrado' });
         }
 
-        res.redirect(doc.file_url);
+        // Buscar o arquivo do Supabase Storage
+        const filePath = `user_${req.userId}/${doc.filename}`;
+        const { data: fileData, error: downloadError } = await supabase.storage
+            .from('documentos')
+            .download(filePath);
+
+        if (downloadError) {
+            console.error('Erro no download do storage:', downloadError);
+            return res.status(500).json({ erro: 'Erro ao baixar arquivo' });
+        }
+
+        // Extrair a extensão do nome original
+        const ext = doc.original_name.split('.').pop().toLowerCase();
+        let mimeType = 'application/octet-stream';
+        
+        // Definir o MIME type correto baseado na extensão
+        if (ext === 'pdf') mimeType = 'application/pdf';
+        else if (['doc', 'docx'].includes(ext)) mimeType = 'application/msword';
+        else if (['ppt', 'pptx'].includes(ext)) mimeType = 'application/vnd.ms-powerpoint';
+        else if (['xls', 'xlsx'].includes(ext)) mimeType = 'application/vnd.ms-excel';
+        else if (['jpg', 'jpeg'].includes(ext)) mimeType = 'image/jpeg';
+        else if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'txt') mimeType = 'text/plain';
+        
+        // Enviar o arquivo com o nome correto (forçando download)
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.original_name)}"`);
+        res.setHeader('Content-Length', fileData.size);
+        res.send(Buffer.from(await fileData.arrayBuffer()));
+        
     } catch (error) {
         console.error('Erro ao fazer download:', error);
         res.status(500).json({ erro: 'Erro ao fazer download' });
