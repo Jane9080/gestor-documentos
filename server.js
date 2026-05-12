@@ -1061,13 +1061,16 @@ app.get('/api/storage/stats', authenticate, async (req, res) => {
             return res.status(403).json({ erro: 'Acesso apenas para administrador' });
         }
         
-        const { data: configData } = await supabase
-            .from('config')
-            .select('value')
-            .eq('key', 'max_storage_mb')
-            .single();
-        
-        const maxStorageMB = configData ? parseInt(configData.value) : 90000;
+       const { data: configData, error: configError } = await supabase
+    .from('config')
+    .select('value')
+    .eq('key', 'max_storage_mb')
+    .single();
+
+console.log('🔍 ERRO ao buscar config:', configError);
+console.log('🔍 DADO encontrado:', configData);
+
+const maxStorageMB = (configData && !configError) ? parseInt(configData.value) : 102400;
         
         const { data: uploadsAllowedData } = await supabase
             .from('config')
