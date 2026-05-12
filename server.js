@@ -1018,9 +1018,109 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
     }
 });
 
+
+
 // ============================================
 // ROTAS DE TESTE E SAÚDE
+// =========================================// ============================================
+// ROTAS DE ARMAZENAMENTO (ADMIN)
 // ============================================
+
+// Obter estatísticas de armazenamento
+app.get('/api/storage/stats', authenticate, async (req, res) => {
+    try {
+        // Verificar se é admin (apenas o email do dono)
+        const adminEmail = 'adminfabio@gmail.com'; // Muda para o teu email
+        const isAdmin = req.userEmail === adminEmail;
+        
+        if (!isAdmin) {
+            return res.status(403).json({ erro: 'Acesso apenas para administrador' });
+        }
+        
+        // Obter limite configurado
+        const { data: configData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'max_storage_mb')
+            .single();
+        
+        const maxStorageMB = configData ? parseInt(configData.value) : 90000; // 90GB padrão
+        
+        // Obter status de uploads permitidos
+        const { data: uploadsAllowedData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'uploads_allowed')
+            .single();
+        
+        const uploadsAllowed = uploadsAllowedData ? uploadsAllowedData.value === 'true' : true;
+        
+        // Calcular espaço total usado
+        const { data: allDocuments } = await supabase
+            .from('documentos')
+            .select('file_size');
+        
+        const totalUsedBytes = allDocuments?.reduce((sum, doc) => sum + (doc.file_size || 0), 0) || 0;
+        const totalUsedMB = Math.round(totalUsedBytes / (1024 * 1024));
+        const totalUsedGB = (totalUsedMB / 1024).toFixed(2);
+        const maxStorageGB = (maxStorageMB / 1024).toFixed(2);
+        
+        const percentUsed = Math.min(100, Math.round((totalUsedMB / maxStorageMB) * 100));
+        const remainingMB = Math.max(0, maxStorageMB - totalUsedMB);
+        const remainingGB = (remainingMB / 1024).toFixed(2);
+        
+        const documentCount = allDocuments?.length || 0;
+        
+        res.json({
+            sucesso: true,
+            isAdmin: true,
+            stats: {
+                totalUsedMB: totalUsedMB,
+                totalUsedGB: totalUsedGB,
+                maxStorageMB: maxStorageMB,
+                maxStorageGB: maxStorageGB,
+                percentUsed: percentUsed,
+                remainingMB: remainingMB,
+                remainingGB: remainingGB,
+                documentCount: documentCount,
+                uploadsAllowed: uploadsAllowed
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao obter estatísticas:', error);
+        res.status(500).json({ erro: 'Erro ao obter estatísticas' });
+    }
+});
+
+// Alterar configurações (admin)
+app.post('/api/storage/limit', authenticate, async (req, res) => {
+    const { maxStorageMB, uploadsAllowed } = req.body;
+    const adminEmail = 'adminfabio@gmail.com'; // Muda para o teu email
+    
+    if (req.userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso apenas para administrador' });
+    }
+    
+    try {
+        if (maxStorageMB !== undefined && !isNaN(maxStorageMB) && maxStorageMB > 0) {
+            await supabase
+                .from('config')
+                .upsert({ key: 'max_storage_mb', value: String(maxStorageMB) });
+        }
+        
+        if (uploadsAllowed !== undefined) {
+            await supabase
+                .from('config')
+                .upsert({ key: 'uploads_allowed', value: String(uploadsAllowed) });
+        }
+        
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao atualizar configuração:', error);
+        res.status(500).json({ erro: 'Erro ao atualizar configuração' });
+    }
+});===
 
 // Rota de teste
 app.get('/api/test', (req, res) => {
