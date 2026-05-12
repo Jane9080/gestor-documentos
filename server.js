@@ -1047,34 +1047,28 @@ app.delete('/api/user/delete', authenticate, async (req, res) => {
 });
 
 
-
 // ============================================
-// ROTAS DE TESTE E SAÚDE
-// =========================================// ============================================
 // ROTAS DE ARMAZENAMENTO (ADMIN)
 // ============================================
 
 // Obter estatísticas de armazenamento
 app.get('/api/storage/stats', authenticate, async (req, res) => {
     try {
-        // Verificar se é admin (apenas o email do dono)
-        const adminEmail = 'adminfabio@gmail.com'; // Muda para o teu email
+        const adminEmail = 'adminfabio@gmail.com';
         const isAdmin = req.userEmail === adminEmail;
         
         if (!isAdmin) {
             return res.status(403).json({ erro: 'Acesso apenas para administrador' });
         }
         
-        // Obter limite configurado
         const { data: configData } = await supabase
             .from('config')
             .select('value')
             .eq('key', 'max_storage_mb')
             .single();
         
-        const maxStorageMB = configData ? parseInt(configData.value) : 90000; // 90GB padrão
+        const maxStorageMB = configData ? parseInt(configData.value) : 90000;
         
-        // Obter status de uploads permitidos
         const { data: uploadsAllowedData } = await supabase
             .from('config')
             .select('value')
@@ -1083,7 +1077,6 @@ app.get('/api/storage/stats', authenticate, async (req, res) => {
         
         const uploadsAllowed = uploadsAllowedData ? uploadsAllowedData.value === 'true' : true;
         
-        // Calcular espaço total usado
         const { data: allDocuments } = await supabase
             .from('documentos')
             .select('file_size');
@@ -1101,54 +1094,42 @@ app.get('/api/storage/stats', authenticate, async (req, res) => {
         
         res.json({
             sucesso: true,
-            isAdmin: true,
             stats: {
-                totalUsedMB: totalUsedMB,
-                totalUsedGB: totalUsedGB,
-                maxStorageMB: maxStorageMB,
-                maxStorageGB: maxStorageGB,
-                percentUsed: percentUsed,
-                remainingMB: remainingMB,
-                remainingGB: remainingGB,
-                documentCount: documentCount,
-                uploadsAllowed: uploadsAllowed
+                totalUsedMB, totalUsedGB, maxStorageMB, maxStorageGB,
+                percentUsed, remainingMB, remainingGB, documentCount, uploadsAllowed
             }
         });
-        
     } catch (error) {
-        console.error('Erro ao obter estatísticas:', error);
+        console.error('Erro:', error);
         res.status(500).json({ erro: 'Erro ao obter estatísticas' });
     }
 });
 
-// Alterar configurações (admin)
+// Alterar configurações
 app.post('/api/storage/limit', authenticate, async (req, res) => {
     const { maxStorageMB, uploadsAllowed } = req.body;
-    const adminEmail = 'adminfabio@gmail.com'; // Muda para o teu email
+    const adminEmail = 'adminfabio@gmail.com';
     
     if (req.userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso apenas para administrador' });
     }
     
     try {
-        if (maxStorageMB !== undefined && !isNaN(maxStorageMB) && maxStorageMB > 0) {
-            await supabase
-                .from('config')
-                .upsert({ key: 'max_storage_mb', value: String(maxStorageMB) });
+        if (maxStorageMB !== undefined && maxStorageMB > 0) {
+            await supabase.from('config').upsert({ key: 'max_storage_mb', value: String(maxStorageMB) });
         }
-        
         if (uploadsAllowed !== undefined) {
-            await supabase
-                .from('config')
-                .upsert({ key: 'uploads_allowed', value: String(uploadsAllowed) });
+            await supabase.from('config').upsert({ key: 'uploads_allowed', value: String(uploadsAllowed) });
         }
-        
         res.json({ sucesso: true });
     } catch (error) {
-        console.error('Erro ao atualizar configuração:', error);
-        res.status(500).json({ erro: 'Erro ao atualizar configuração' });
+        res.status(500).json({ erro: 'Erro ao atualizar' });
     }
-});===
+});
+
+// ============================================
+// ROTAS DE TESTE E SAÚDE
+// ============================================
 
 // Rota de teste
 app.get('/api/test', (req, res) => {
@@ -1159,6 +1140,14 @@ app.get('/api/test', (req, res) => {
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
+
+
+
+
+
+
+
+
 
 // ============================================
 // TRATAMENTO DE ERROS GLOBAL
