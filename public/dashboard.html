@@ -1774,24 +1774,33 @@ window.viewDocument = async (id, name) => {
     }
 };
         
-        window.downloadDocument = async (id) => {
+       window.downloadDocument = async (id) => {
     try {
         const response = await fetch(`${API_URL}/download/${id}?token=${currentToken}`);
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
         
         // Extrair nome do arquivo do header Content-Disposition
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'documento';
+        
         if (contentDisposition) {
-            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (match && match[1]) {
-                filename = match[1].replace(/['"]/g, '');
+            // Tentar extrair filename* (UTF-8) primeiro
+            const matchStar = contentDisposition.match(/filename\*=UTF-8''([^;]+)/);
+            if (matchStar && matchStar[1]) {
+                filename = decodeURIComponent(matchStar[1]);
+            } else {
+                // Fallback para filename normal
+                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (match && match[1]) {
+                    filename = match[1].replace(/['"]/g, '');
+                    filename = decodeURIComponent(filename);
+                }
             }
         }
         
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
