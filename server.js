@@ -783,6 +783,7 @@ app.delete('/api/share/:token', authenticate, async (req, res) => {
 });
 
 // Rota pública para acessar documento partilhado
+// Rota pública para acessar documento partilhado
 app.get('/share/:token', async (req, res) => {
     const token = req.params.token;
     
@@ -807,41 +808,22 @@ app.get('/share/:token', async (req, res) => {
                 <head>
                     <title>Link inválido</title>
                     <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
                     <style>
-                        body { 
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                            text-align: center; 
-                            padding: 50px 20px; 
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            min-height: 100vh;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        }
-                        .container { 
-                            max-width: 500px; 
-                            background: white; 
-                            padding: 40px; 
-                            border-radius: 12px; 
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                        }
-                        h1 { color: #dc3545; margin-bottom: 20px; }
-                        p { color: #666; line-height: 1.6; }
+                        body { font-family: Arial; text-align: center; padding: 50px; background: #1e3c72; }
+                        .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; }
+                        h1 { color: #dc3545; }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <h1>🔗 Link inválido</h1>
                         <p>Este link de partilha não é válido ou não existe.</p>
-                        <p>Contacte o proprietário do documento para obter um novo link.</p>
                     </div>
                 </body>
                 </html>
             `);
         }
 
-        // Verificar se o link expirou
         if (new Date(data.expires_at) < new Date()) {
             return res.status(410).send(`
                 <!DOCTYPE html>
@@ -849,34 +831,16 @@ app.get('/share/:token', async (req, res) => {
                 <head>
                     <title>Link expirado</title>
                     <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
                     <style>
-                        body { 
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                            text-align: center; 
-                            padding: 50px 20px; 
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            min-height: 100vh;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        }
-                        .container { 
-                            max-width: 500px; 
-                            background: white; 
-                            padding: 40px; 
-                            border-radius: 12px; 
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                        }
-                        h1 { color: #dc3545; margin-bottom: 20px; }
-                        p { color: #666; line-height: 1.6; }
+                        body { font-family: Arial; text-align: center; padding: 50px; background: #1e3c72; }
+                        .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; }
+                        h1 { color: #dc3545; }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <h1>⏰ Link expirado</h1>
-                        <p>Este link de partilha expirou.</p>
-                        <p>Contacte o proprietário do documento para um novo link.</p>
+                        <p>Este link de partilha expirou em ${new Date(data.expires_at).toLocaleDateString('pt-PT')}.</p>
                     </div>
                 </body>
                 </html>
@@ -884,13 +848,110 @@ app.get('/share/:token', async (req, res) => {
         }
 
         const doc = data.documentos;
-        res.redirect(doc.file_url);
+        const fileUrl = doc.file_url;
+        const fileName = doc.original_name;
+        const fileExt = fileName.split('.').pop().toLowerCase();
+        
+        // PDF - abre diretamente
+        if (fileExt === 'pdf') {
+            return res.redirect(fileUrl);
+        }
+        
+        // Outros formatos - mostra com Google Docs e NOME CORRETO
+        const googleViewer = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(fileUrl)}`;
+        
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${fileName}</title>
+                <meta charset="utf-8">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background: #f5f7fa;
+                        height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                        color: white;
+                        padding: 15px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        flex-wrap: wrap;
+                        gap: 10px;
+                    }
+                    .header h2 {
+                        font-size: 18px;
+                        font-weight: normal;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                        max-width: 60%;
+                    }
+                    .header a {
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        text-decoration: none;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        font-size: 14px;
+                        transition: all 0.3s;
+                    }
+                    .header a:hover {
+                        background: rgba(255,255,255,0.3);
+                    }
+                    iframe {
+                        flex: 1;
+                        width: 100%;
+                        border: none;
+                    }
+                    .footer {
+                        text-align: center;
+                        padding: 10px;
+                        background: #f8f9fa;
+                        font-size: 12px;
+                        color: #666;
+                    }
+                    @media (max-width: 700px) {
+                        .header h2 { font-size: 14px; max-width: 50%; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>📄 ${escapeHtml(fileName)}</h2>
+                    <a href="${fileUrl}" download="${encodeURIComponent(fileName)}">⬇️ Baixar documento</a>
+                </div>
+                <iframe src="${googleViewer}"></iframe>
+                <div class="footer">
+                    🔗 Documento partilhado via Meus Documentos • Link válido até ${new Date(data.expires_at).toLocaleDateString('pt-PT')}
+                </div>
+            </body>
+            </html>
+        `);
     } catch (error) {
         console.error('Erro ao acessar documento partilhado:', error);
         res.status(500).send('Erro ao acessar o documento');
     }
 });
 
+// Função auxiliar para o HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+        return c;
+    });
+}
 // ============================================
 // ROTAS DE CONTA DE UTILIZADOR
 // ============================================
