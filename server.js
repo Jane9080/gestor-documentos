@@ -225,10 +225,24 @@ app.post('/api/login', async (req, res) => {
 // ROTAS DE DOCUMENTOS
 // ============================================
 
-// Upload de documento
+// Upload de documento (VERSÃO CORRIGIDA)
 app.post('/api/upload', authenticate, (req, res) => {
     upload(req, res, async (err) => {
-                // Verificar se uploads estão permitidos
+        // PRIMEIRO: verificar erro do multer
+        if (err) {
+            console.error('Erro multer:', err);
+            return res.status(400).json({ erro: err.message });
+        }
+        
+        // SEGUNDO: verificar se existe ficheiro
+        if (!req.file) {
+            return res.status(400).json({ erro: 'Nenhum ficheiro enviado' });
+        }
+
+        // TERCEIRO: agora sim podemos usar o file
+        const file = req.file;
+        
+        // Verificar se uploads estão permitidos
         const { data: uploadsAllowedData } = await supabase
             .from('config')
             .select('value')
@@ -250,25 +264,16 @@ app.post('/api/upload', authenticate, (req, res) => {
             .eq('key', 'max_storage_mb')
             .single();
         
-        const maxStorageMB = configData ? parseInt(configData.value) : 90000;
+        const maxStorageMB = configData ? parseInt(configData.value) : 102400;
         
         // Verificar se o novo arquivo cabe
         if (totalUsedMB + (file.size / (1024 * 1024)) > maxStorageMB) {
             return res.status(403).json({ erro: `❌ Limite de armazenamento excedido! Usado: ${totalUsedMB.toFixed(1)}MB / ${maxStorageMB}MB` });
         }
-        if (err) {
-            return res.status(400).json({ erro: err.message });
-        }
-        
-        if (!req.file) {
-            return res.status(400).json({ erro: 'Nenhum ficheiro enviado' });
-        }
 
-        const file = req.file;
         let originalName = fixEncoding(file.originalname);
         let tags = [];
         
-        // Limitar comprimento do nome
         if (originalName.length > 255) {
             originalName = originalName.substring(0, 255);
         }
@@ -277,22 +282,18 @@ app.post('/api/upload', authenticate, (req, res) => {
             try {
                 tags = JSON.parse(req.body.tags);
                 if (!Array.isArray(tags)) tags = [];
-                if (tags.length > 50) tags = tags.slice(0, 50); // Máx 50 tags
+                if (tags.length > 50) tags = tags.slice(0, 50);
             } catch (e) {
                 tags = [];
             }
         }
         
-        // Detectar o tipo do arquivo
         const fileType = detectFileType(originalName);
-        
-        // Gerar nome único para o arquivo no Storage
         const ext = path.extname(originalName).toLowerCase();
         const uniqueFileName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
         const filePath = `user_${req.userId}/${uniqueFileName}`;
 
         try {
-            // Upload para Supabase Storage
             const { error: uploadError } = await supabase.storage
                 .from('documentos')
                 .upload(filePath, file.buffer, {
@@ -305,14 +306,12 @@ app.post('/api/upload', authenticate, (req, res) => {
                 return res.status(500).json({ erro: 'Erro ao fazer upload do ficheiro' });
             }
 
-            // Obter URL pública
             const { data: urlData } = supabase.storage
                 .from('documentos')
                 .getPublicUrl(filePath);
 
             const fileUrl = urlData.publicUrl;
 
-            // Salvar no banco de dados
             const { data: docData, error: dbError } = await supabase
                 .from('documentos')
                 .insert([{
@@ -344,7 +343,7 @@ app.post('/api/upload', authenticate, (req, res) => {
                     file_size: file.size,
                     tags: tags,
                     favorite: 0,
-                    uploaded_at: docData.created_at || new Date().toISOString()
+                    uploaded_at: new Date().toISOString()
                 }
             });
         } catch (error) {
@@ -353,7 +352,6 @@ app.post('/api/upload', authenticate, (req, res) => {
         }
     });
 });
-
 // Listar documentos
 app.get('/api/documents', authenticate, async (req, res) => {
     try {
